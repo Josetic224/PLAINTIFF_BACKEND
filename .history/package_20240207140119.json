@@ -4,8 +4,8 @@
   "description": "Plaintiff Platform",
   "main": "index.js",
   "scripts": {
-    "start": "node build/index.js",
-    "dev": "tsc-watch --onSuccess \"node ./build/index.js\"",
+    "start": "node build/src/index.js",
+    "dev": "tsc-watch --onSuccess \"node ./build/src/index.js\"",
     "seed": "ts-node prisma/seed.ts",
     "build": "npx tsc"
   },
