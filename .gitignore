@@ -1,0 +1,35 @@
+# Node.js & npm/yarn
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDE and Workspace settings
+.vscode/
+.idea/
+
+# Build output and temporary files
+dist/
+temp/
+coverage/
+build/
+
+# Testing
+*.log
+jest/
+
+# TypeScript compilation
+*.tsbuildinfo
+
+# Editor cache
+.eslintcache
+.nyc_output
+
+# Environment variables
+.env*
+
+# Optional - ignore additional files if needed
+# *.config
+# secrets.json
+
+# Dependencies for specific tools
+# webpack.config.js
