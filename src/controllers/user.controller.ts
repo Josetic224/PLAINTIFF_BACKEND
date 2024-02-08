@@ -10,3 +10,5 @@ export const getAllUsersController = async (req: Request, res: Response) => {
     return res.sendStatus(400);
   }
 };
+
+
