@@ -1,0 +1,5 @@
+Untitled:
+  url: http://localhost:3000/api_v1/user
+  method: POST
+  headers: {}
+  body: "{\r\n\t \"firmname\":\"Agatha\", \r\n\t\"password\":\"j.boy1234\", \r\n\t\"email\":\"josephochkviiaghkvfia112@gmail.com\", \r\n\t\"roleId\":1\r\n}"
