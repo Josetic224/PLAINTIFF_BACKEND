@@ -9,6 +9,9 @@ export const getAllUsers = () => prisma.user.findMany();
 export const getUserByEmail = (email: string) =>
   prisma.user.findFirst({ where: { Email: email } });
 
+  export const getUserById = (id:number) =>
+  prisma.user.findFirst({ where: { UserID:id} });
+
 export const createUser = (
   legalFirmName: string,
   password: string,
@@ -30,3 +33,26 @@ export const comparePassword = async (password: string, user: object) => {
   }
   return true;
 };
+
+
+
+
+export const updateUser = async ( id:number, newPassword: string) => {
+  try {
+    // Update the user's email and password
+    const updatedUser = await prisma.user.update({
+      where: { UserID:id },
+      data:
+       {
+        Password:hashSync(newPassword,10)
+       },
+    });
+
+    return updatedUser;
+  } catch (error) {
+    // Handle errors
+    console.error("Error updating user:", error);
+    throw new Error("Failed to update user.");
+  }
+};
+
