@@ -7,6 +7,5 @@ const router = express.Router();
 export default (): express.Router => {
   users(router);
   healthchecks(router);
-
   return router;
 };

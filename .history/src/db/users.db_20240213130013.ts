@@ -23,10 +23,13 @@ export const createUser = (
     },
   });
 
-export const comparePassword = async (password: string, user: object) => {
-  if (!compareSync(password, "jsdhjdjh")) {
-    return false;
-    // throw Error(`Incorrect Password ${password}`);
+export const comparePassword = (password: string, email: string) => {
+  const existingUser = getUserByEmail(email);
+
+  if (!existingUser) {
+    throw Error(`User ${email} does not exist`);
   }
-  return true;
+  if (!compareSync(password, "jsdhjdjh")) {
+    throw Error(`Incorrect Password ${password}`);
+  }
 };

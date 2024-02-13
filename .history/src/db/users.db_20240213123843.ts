@@ -1,19 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { hashSync, compareSync } from "bcrypt";
-import * as jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 
 export const getAllUsers = () => prisma.user.findMany();
 
+
 export const getUserByEmail = (email: string) =>
   prisma.user.findFirst({ where: { Email: email } });
 
-export const createUser = (
-  legalFirmName: string,
-  password: string,
-  email: string
-) =>
+
+export const createUser = (legalFirmName: string, password: string, email: string) =>
   prisma.user.create({
     data: {
       Username: legalFirmName,
@@ -23,10 +20,11 @@ export const createUser = (
     },
   });
 
-export const comparePassword = async (password: string, user: object) => {
-  if (!compareSync(password, "jsdhjdjh")) {
-    return false;
-    // throw Error(`Incorrect Password ${password}`);
+
+export const comparePassword = (password: string, email: string) => { 
+  const existingUser = getUserByEmail(email);
+  if (!existingUser) { 
+    throw Error(`User ${email} does not exist);
   }
-  return true;
-};
+    if(!compareSync(password, existingUser.
+}
