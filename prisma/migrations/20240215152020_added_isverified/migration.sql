@@ -4,6 +4,8 @@ CREATE TABLE `users` (
     `Username` VARCHAR(191) NULL,
     `Password` VARCHAR(191) NOT NULL,
     `Email` VARCHAR(191) NOT NULL,
+    `Token` VARCHAR(191) NOT NULL,
+    `isVerified` BOOLEAN NOT NULL DEFAULT false,
     `RoleID` INTEGER NOT NULL,
 
     UNIQUE INDEX `users_Email_key`(`Email`),

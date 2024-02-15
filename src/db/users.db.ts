@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { hashSync, compareSync } from "bcrypt";
-import * as jwt from "jsonwebtoken";
+import {sign, verify}from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env" });
 
 const prisma = new PrismaClient();
 
@@ -12,20 +15,35 @@ export const getUserByEmail = (email: string) =>
   export const getUserById = (id:number) =>
   prisma.user.findFirst({ where: { UserID:id} });
 
-export const createUser = (
+
+export const createUser = async (
   legalFirmName: string,
   password: string,
   email: string
-) =>
-  prisma.user.create({
-    data: {
-      Username: legalFirmName,
-      Email: email,
-      Password: hashSync(password, 10),
-      RoleID: 1,
-    },
-  });
+) => {
+  try {
+    const hashedPassword = hashSync(password, 10);
+    const jwtSecret = process.env.JWT_SECRET || "pgiir7dkuciylf"; // Providing a default value if JWT_SECRET is undefined
+    const token = sign({ legalFirmName }, jwtSecret, { expiresIn: "1h" });
 
+    const newUser = await prisma.user.create({
+      data: {
+        Username: legalFirmName,
+        Email: email.toLocaleLowerCase(),
+        Password: hashedPassword,
+        RoleID: 1,
+        Token: token
+      }
+    });
+
+    return newUser;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw new Error("Failed to create user.");
+  }
+};
+    
+  
 export const comparePassword = async (password: string, user: object) => {
   if (!compareSync(password, "jsdhjdjh")) {
     return false;
@@ -36,7 +54,7 @@ export const comparePassword = async (password: string, user: object) => {
 
 
 
-
+//update password
 export const updateUser = async ( id:number, newPassword: string) => {
   try {
     // Update the user's email and password
@@ -44,7 +62,8 @@ export const updateUser = async ( id:number, newPassword: string) => {
       where: { UserID:id },
       data:
        {
-        Password:hashSync(newPassword,10)
+        Password:hashSync(newPassword,10),
+
        },
     });
 
@@ -56,3 +75,50 @@ export const updateUser = async ( id:number, newPassword: string) => {
   }
 };
 
+
+
+export const jwtverify = async (token: string) => {
+  try {
+    const jwtSecret = process.env.JWT_SECRET || "pgiir7dkuciylf"; // Providing a default value if JWT_SECRET is undefined
+    const decodedToken = verify(token, jwtSecret);
+    return decodedToken;
+  } catch (error) {
+    console.error("Error verifying JWT:", error);
+    throw new Error("Failed to verify JWT.");
+  }
+};
+
+export const verification = async (id: number, isVerified: boolean) => {
+  try {
+    // Update the user's isVerified status
+    const verifying = await prisma.user.update({
+      where: { UserID: id },
+      data: {
+        isVerified: isVerified
+      },
+    });
+
+    return verifying;
+  } catch (error) {
+    // Handle errors
+    console.error("Error updating user:", error);
+    throw new Error("Failed to update user.");
+  }
+};
+
+
+export const createNewToken = async (payload: any) => {
+  try {
+    // Get the JWT secret from environment variables
+    const jwtSecret = process.env.JWT_SECRET || "pgiir7dkuciylf"; // Providing a default value if JWT_SECRET is undefined
+    
+    // Sign the payload to create a new token
+    const token = sign(payload, jwtSecret, { expiresIn: "1h" }); // Example expiry time: 1 hour (you can adjust as needed)
+
+    return token;
+  } catch (error) {
+    // Handle errors
+    console.error("Error creating new token:", error);
+    throw new Error("Failed to create new token.");
+  }
+};

@@ -17,6 +17,8 @@ model User {
   Username   String?
   Password   String
   Email      String  @unique
+  Token      String
+  isVerified  Boolean @default(false)
   RoleID     Int
   Role       Role[]
   Clients    Client[]
