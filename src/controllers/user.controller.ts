@@ -10,6 +10,7 @@ import {
   createNewToken,
   updateUserPassword,
   updateUserToken,
+  destroyToken,
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -68,7 +69,7 @@ export const signUp = async (req: Request, res: Response) => {
 
 //verify email function
 
-export const verifyPassword = async (req: Request, res: Response) => {
+export const verifyEmail= async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.UserID, 10);
     const token = req.params.Token;
@@ -167,27 +168,81 @@ export const verifyPassword = async (req: Request, res: Response) => {
   
 
 export const forgotPassword = async (req: Request, res: Response) => {
-  const { email, newPassword, confirmPassword } = req.body;
+  const { email} = req.body;
   try {
-    // Check if the passwords match
-    if (newPassword !== confirmPassword) {
-      throw new Error("Passwords do not match");
-    }
-
+    // Check if the User exists
     const existingUser = await getUserByEmail(email);
     if (!existingUser) {
       throw new Error(`User ${email} does not exist`);
     }
 
-   
-    // Update the user's password with the new password
-    await updateUserPassword(existingUser.UserID, newPassword);
+    //after this, send the user a reset password link
+    else{
+      const link = `${req.protocol}://${req.get('host')}/api_v1/reset/${existingUser.UserID}`;
+      console.log(link)
+      sendEmail({
+        email: existingUser.Email,
+        html: `<a href="${link}">Click here to reset your password</a>`,
+        subject: "PASSWORD RESET"
+      });
 
-    // Send a response indicating success
-    res.status(200).json({ status: true, message: "Password reset successful. Your password has been updated." });
-  } catch (err) {
+    }
+    return res.status(200).json({
+      message:"kindly check your email to reset your password"
+    })
+
+  }catch(error){
+     res.status(500).json(error)
+  }
+}
+//after this, write a fuction that resets the password itself
+
+export const resetPassword = async(req:Request, res:Response)=>{
+  try {
+    const id = parseInt(req.params.UserID, 10)
+  const {newPassword, confirmPassword} = req.body.password
+  if(!newPassword || !confirmPassword){
+   return res.status(400).json("password and confirmPassword can't be empty!")
+  }
+
+  if(newPassword !== confirmPassword){
+    return res.status(400).json("passwords do not match")
+  }
+  //after this, hash the password
+  await updateUserPassword(id, newPassword)
+  return res.status(200).json("Password reset successfully")
+  } catch (error) {
+    res.status(500).json(error)
+  }
+  
+}
+
+
+//function to sign out the user... 
+export const signOut = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.UserID, 10);
+   
+    // Get user by id
+    const user = await getUserById(id);
+    if (!user) {
+      return res.status(400).json("User doesn't exist");
+    }
+
+    // Check if the user's token is already null or not a string
+    if (user.Token === "") {
+      // Respond with a message indicating that the user is already signed out
+      return res.status(400).json({ message: 'User is already signed out' });
+    }
+
+    // Update user's token to an empty string
+    await destroyToken(id);
+
+    // Respond with success message
+    return res.status(200).json({ message: 'User signed out successfully' });
+  } catch (error) {
     // Handle errors
-    console.error(err);
-    return res.status(400).json({ status: false, message: err || "Password reset failed. Please try again later." });
+    console.error('Error signing out user:', error);
+    return res.status(500).json(error);
   }
 };

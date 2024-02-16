@@ -149,3 +149,38 @@ export const updateUserToken = async (id: number, token: string) => {
     throw new Error("Failed to update user token.");
   }
 };
+
+
+// export const destroyToken = async (id: number) => {
+//   try {
+//     // Update the user's token
+//     const updatedUser = await prisma.user.update({
+//       where: { UserID: id },
+//       data: { Token: null as unknown as string | undefined }
+//     });
+
+//     return updatedUser;
+//   } catch (error) {
+//     // Handle errors
+//     console.error("Error updating user token:", error);
+//     throw new Error("Failed to update user token.");
+//   }
+// };
+
+
+
+export const destroyToken = async (id: number) => {
+  try {
+    // Update the user's token
+    const updatedUser = await prisma.user.update({
+      where: { UserID: id },
+      data: { Token: "" }
+    });
+
+    return updatedUser;
+  } catch (error) {
+    // Handle errors
+    console.error("Error updating user token:", error);
+    throw new Error("Failed to update user token.");
+  }
+};

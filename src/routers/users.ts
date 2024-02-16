@@ -4,7 +4,9 @@ import {
   signUp,
   signIn,
   forgotPassword,
-  verifyPassword
+  resetPassword,
+  verifyEmail,
+  signOut,
   
 } from "../controllers/user.controller";
 // import { updateUser } from "../db/users.db";
@@ -14,6 +16,9 @@ export default (router: express.Router) => {
 
   router.post("/signup", signUp);
   router.post("/login",  signIn);
-  router.put("/resetPassword", forgotPassword)
-  router.get("/verify/:UserID/:Token", verifyPassword)
+  router.get("/verify/:UserID/:Token", verifyEmail)
+  router.post("/forgotPassword", forgotPassword)
+  router.put("/reset/:UserID", resetPassword)
+  router.get("/signout/:UserID", signOut)
+  
 };
