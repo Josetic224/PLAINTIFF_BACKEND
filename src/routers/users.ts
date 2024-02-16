@@ -9,12 +9,13 @@ import {
   signOut,
   
 } from "../controllers/user.controller";
+import { handleValidationErrors, validateUserRegistration } from "../validator/validator";
 // import { updateUser } from "../db/users.db";
 
 export default (router: express.Router) => {
   router.get("/users", getAllUsersController);
 
-  router.post("/signup", signUp);
+  router.post("/signup",validateUserRegistration,handleValidationErrors, signUp);
   router.post("/login",  signIn);
   router.get("/verify/:UserID/:Token", verifyEmail)
   router.post("/forgotPassword", forgotPassword)
