@@ -12,8 +12,18 @@ export const getAllUsers = () => prisma.user.findMany();
 export const getUserByEmail = (email: string) =>
   prisma.user.findFirst({ where: { Email: email } });
 
-  export const getUserById = (id:number) =>
-  prisma.user.findFirst({ where: { UserID:id} });
+  export const getUserById = async (id: number) => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { UserID: id }
+      });
+      return user;
+    } catch (error) {
+      console.error("Error fetching user by ID:", error);
+      throw new Error("Failed to fetch user by ID.");
+    }
+  };
+  
 
 
 export const createUser = async (
@@ -55,7 +65,7 @@ export const comparePassword = async (password: string, user: object) => {
 
 
 //update password
-export const updateUser = async ( id:number, newPassword: string) => {
+export const updateUserPassword = async ( id:number, newPassword: string) => {
   try {
     // Update the user's email and password
     const updatedUser = await prisma.user.update({
@@ -87,7 +97,7 @@ export const jwtverify = async (token: string) => {
     throw new Error("Failed to verify JWT.");
   }
 };
-
+//update for verification
 export const verification = async (id: number, isVerified: boolean) => {
   try {
     // Update the user's isVerified status
@@ -120,5 +130,22 @@ export const createNewToken = async (payload: any) => {
     // Handle errors
     console.error("Error creating new token:", error);
     throw new Error("Failed to create new token.");
+  }
+};
+
+
+export const updateUserToken = async (id: number, token: string) => {
+  try {
+    // Update the user's token
+    const updatedUser = await prisma.user.update({
+      where: { UserID: id },
+      data: { Token: token }
+    });
+
+    return updatedUser;
+  } catch (error) {
+    // Handle errors
+    console.error("Error updating user token:", error);
+    throw new Error("Failed to update user token.");
   }
 };

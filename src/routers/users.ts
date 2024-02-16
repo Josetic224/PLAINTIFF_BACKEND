@@ -7,7 +7,7 @@ import {
   verifyPassword
   
 } from "../controllers/user.controller";
-import { updateUser } from "../db/users.db";
+// import { updateUser } from "../db/users.db";
 
 export default (router: express.Router) => {
   router.get("/users", getAllUsersController);
