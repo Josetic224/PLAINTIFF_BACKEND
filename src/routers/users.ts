@@ -7,6 +7,7 @@ import {
   resetPassword,
   verifyEmail,
   signOut,
+  downloadTemplateController,
   
 } from "../controllers/user.controller";
 import { handleValidationErrors, validateUserRegistration } from "../validator/validator";
@@ -20,6 +21,6 @@ export default (router: express.Router) => {
   router.get("/verify/:UserID/:Token", verifyEmail)
   router.post("/forgotPassword", forgotPassword)
   router.put("/reset/:UserID", resetPassword)
-  router.get("/signout/:UserID", signOut)
-  
-};
+  router.get("/signout/:UserID/:Token", signOut)
+  router.get('/download-template/:UserID', downloadTemplateController)
+  };

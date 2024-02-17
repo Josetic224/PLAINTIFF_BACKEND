@@ -77,6 +77,7 @@ model Document {
   DocumentID   Int      @id @default(autoincrement())
   DocumentName String
   FilePath     String
+  Content      Bytes 
   UploadDate   DateTime @default(now())
   ClientID     Int
   Client       Client   @relation(fields: [ClientID], references: [ClientID])

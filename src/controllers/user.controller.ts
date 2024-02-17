@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import exceljs from "exceljs"
 import {
   getAllUsers,
   getUserByEmail,
@@ -11,6 +12,7 @@ import {
   updateUserPassword,
   updateUserToken,
   destroyToken,
+  createClient,
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -71,11 +73,11 @@ export const signUp = async (req: Request, res: Response) => {
 
 export const verifyEmail= async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.UserID, 10);
+    const userId = parseInt(req.params.UserID, 10);
     const token = req.params.Token;
 
     // Get the intended user by id
-    const user = await getUserById(id);
+    const user = await getUserById(userId);
 
     if (!user) {
       throw new Error("User not found");
@@ -95,8 +97,8 @@ export const verifyEmail= async (req: Request, res: Response) => {
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       // Handle token expiration
-      const id = parseInt (req.params.UserID, 10);
-      const updateUser = await getUserById(id)
+      const userId = parseInt (req.params.UserID, 10);
+      const updateUser = await getUserById(userId)
       
       if (updateUser) {
         // Create a new token for the user
@@ -199,7 +201,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const resetPassword = async(req:Request, res:Response)=>{
   try {
-    const id = parseInt(req.params.UserID, 10)
+    const userId = parseInt(req.params.UserID, 10)
   const {newPassword, confirmPassword} = req.body.password
   if(!newPassword || !confirmPassword){
    return res.status(400).json("password and confirmPassword can't be empty!")
@@ -209,7 +211,7 @@ export const resetPassword = async(req:Request, res:Response)=>{
     return res.status(400).json("passwords do not match")
   }
   //after this, hash the password
-  await updateUserPassword(id, newPassword)
+  await updateUserPassword(userId, newPassword)
   return res.status(200).json("Password reset successfully")
   } catch (error) {
     res.status(500).json(error)
@@ -221,10 +223,10 @@ export const resetPassword = async(req:Request, res:Response)=>{
 //function to sign out the user... 
 export const signOut = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.UserID, 10);
+    const userId = parseInt(req.params.UserID, 10);
    
     // Get user by id
-    const user = await getUserById(id);
+    const user = await getUserById(userId);
     if (!user) {
       return res.status(400).json("User doesn't exist");
     }
@@ -236,7 +238,7 @@ export const signOut = async (req: Request, res: Response) => {
     }
 
     // Update user's token to an empty string
-    await destroyToken(id);
+    await destroyToken(userId);
 
     // Respond with success message
     return res.status(200).json({ message: 'User signed out successfully' });
@@ -246,3 +248,75 @@ export const signOut = async (req: Request, res: Response) => {
     return res.status(500).json(error);
   }
 };
+
+
+
+
+//create a client manually
+
+// export const createClientController = async (req: Request, res: Response) => {
+//   try {
+//     const userId = parseInt(req.params.UserID); // Extract userId from URL params
+
+//     // Get the authenticated user
+//     const authenticatedUser = await getUserById(userId);
+
+//     // Check if user is authenticated
+//     if (!authenticatedUser) {
+//       return res.status(403).json("Forbidden"); // Send forbidden response if user is not authenticated
+//     }
+
+//     // Check if userId from URL params matches authenticated user's ID
+//     if (userId !== authenticatedUser.UserID) {
+//       return res.status(403).json("Forbidden"); // Send forbidden response if userId doesn't match authenticated user's ID
+//     }
+
+//     // Extract client and case data from request body
+//     const { firstname, lastname, contactNumber, email, address, caseName, caseDescription, caseStatus, assignedUserId } = req.body;
+
+//     // Call createClient function to create a new client
+//     const newClient = await createClient(userId, firstname, lastname, contactNumber, email, address, caseName, caseDescription, caseStatus, assignedUserId);
+
+//     // Respond with the created client
+//     res.status(201).json(newClient);
+//   } catch (error) {
+//     console.error('Error creating client:', error);
+//     res.status(500).send('Internal server error');
+//   }
+// };
+
+
+
+//function to download excel sheet from the server for the batch upload
+
+export const downloadTemplateController = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.UserID)
+    const authenticatedUser = await getUserById(userId);
+    if (!authenticatedUser) {
+             return res.status(403).json("Forbidden");
+    }
+
+    if (userId !== authenticatedUser.UserID) {
+          return res.status(403).json("Forbidden");
+    }
+    // Create Excel workbook
+    const workbook = new exceljs.Workbook();
+    const worksheet = workbook.addWorksheet('Clients');
+
+    // Add headers to the worksheet
+    worksheet.addRow(['Firstname', 'Lastname', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'AssignedUserId']);
+
+    // Send the Excel file as a response
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="client_template.xlsx"');
+    workbook.xlsx.write(res)
+      .then(() => {
+        res.status(200).end();
+      });
+  } catch (error) {
+    console.error('Error downloading template:', error);
+    res.status(500).send('Internal server error');
+  }
+};
+
