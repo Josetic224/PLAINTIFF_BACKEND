@@ -2,9 +2,9 @@
   "name": "plaintiff_backend",
   "version": "1.0.0",
   "description": "Plaintiff Platform",
-  "main": "index.js",
+  "main": "myserver",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon myserver.json"
   },
   "repository": {
     "type": "git",
