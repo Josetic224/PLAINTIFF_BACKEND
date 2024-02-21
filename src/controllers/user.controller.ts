@@ -1,5 +1,10 @@
-import express, { Request, Response } from "express";
-import exceljs from "exceljs"
+import express, { NextFunction, Request, Response } from "express";
+
+import { PrismaClient } from '@prisma/client';
+import { readXlsxFile } from "read-excel-file"
+const prisma = new PrismaClient();
+import * as  exceljs from "exceljs"
+
 import {
   getAllUsers,
   getUserByEmail,
@@ -12,13 +17,16 @@ import {
   updateUserPassword,
   updateUserToken,
   destroyToken,
-  createClient,
+  
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
 import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
+
+
+
 
 export const getAllUsersController = async (req: Request, res: Response) => {
   try {
@@ -289,23 +297,15 @@ export const signOut = async (req: Request, res: Response) => {
 
 //function to download excel sheet from the server for the batch upload
 
-export const downloadTemplateController = async (req: Request, res: Response) => {
+// Endpoint for downloading the Excel template
+export const downloadTemplateController = (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.UserID)
-    const authenticatedUser = await getUserById(userId);
-    if (!authenticatedUser) {
-             return res.status(403).json("Forbidden");
-    }
-
-    if (userId !== authenticatedUser.UserID) {
-          return res.status(403).json("Forbidden");
-    }
     // Create Excel workbook
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Clients');
 
     // Add headers to the worksheet
-    worksheet.addRow(['Firstname', 'Lastname', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'AssignedUserId']);
+    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'AssignedUserID']);
 
     // Send the Excel file as a response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -320,3 +320,88 @@ export const downloadTemplateController = async (req: Request, res: Response) =>
   }
 };
 
+
+
+
+export const uploadFile = async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.UserID, 10);
+    const AssignedUserID = parseInt(req.params.AssignedUserID, 10)
+    try {
+        if (!req.file) {
+            throw new Error('No file uploaded');
+        }
+
+        const workbook = new exceljs.Workbook();
+
+        // Read the Excel file from memory
+        await workbook.xlsx.load(req.file.buffer);
+
+        // Assuming the Excel file has a specific structure
+        const worksheet = workbook.getWorksheet(1);
+
+        // Initialize row array
+        const clientsData: any[] = [];
+
+        // Iterate through each row in the worksheet and push to clientsData
+        worksheet?.eachRow((row, rowNumber) => {
+            if (rowNumber > 1) { // Skip header row
+                clientsData.push(row.values);
+            }
+        });
+
+        // Save data to database
+        await Promise.all(clientsData.map(async (row: any[]) => {
+          const [_, FirstName, LastName, ContactNumber, EmailObj, Address, CaseName, CaseDescription, CaseStatus] = row;
+
+          // Extracting email from the object
+          const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
+          
+          console.log(row);
+
+            // Save client data
+            await prisma.client.create({
+                data: {
+                    FirstName: FirstName,
+                    LastName: LastName,
+                    ContactNumber: ContactNumber,
+                    Email: Email,
+                    Address: Address,
+                    User: {
+                        connect: {
+                            UserID: userId
+                        }
+                    },
+                    Case: {
+                        create: {
+                            CaseName: CaseName,
+                            CaseDescription: CaseDescription,
+                            CaseStatus: CaseStatus,
+                            AssignedUser:{
+                              connect:{
+                                UserID: AssignedUserID 
+                              }
+                            }
+                        }
+                    }
+                }
+            });
+        }));
+
+        res.status(200).json({ message: 'Data uploaded successfully' });
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+
+
+//get all clients
+export const Allclients = async (req:Request, res:Response)=>{
+  //perform the try catch 
+  try {
+    
+  } catch (error) {
+    res.status(500).json("error")
+  }
+}

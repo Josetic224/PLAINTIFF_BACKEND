@@ -173,25 +173,25 @@ export const destroyToken = async (id: number) => {
 
 
 
-// // for client
-// export const getAllClients = ()=>prisma.client.findMany()
+// for client
+export const getAllClients = ()=>prisma.client.findMany()
 
-// //get client by Firstname
-// export const getClientByFirstname = async(firstname:string)=>{
-//   prisma.client.findFirst({
-//     where:{FirstName:firstname}
-//   })
+//get client by Firstname
+export const getClientByFirstname = async(firstname:string)=>{
+  prisma.client.findFirst({
+    where:{FirstName:firstname}
+  })
 
-// }
-
-
-// export const getClientByLastname = async(lastname:string)=>{
-//   prisma.client.findFirst({where:{LastName:lastname}})
-// }
+}
 
 
+export const getClientByLastname = async(lastname:string)=>{
+  prisma.client.findFirst({where:{LastName:lastname}})
+}
 
-export const createClient = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string, caseName:string, caseDescription:string, caseStatus:string, assignedUserId:number)=>{
+
+
+export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string, caseName:string, caseDescription:string, caseStatus:string, assignedUserId:number)=>{
   try {
     const newClient = await prisma.client.create({
       data: {
@@ -219,5 +219,8 @@ return newClient
     throw new Error(error)
   }
 }
+
+
+
 
 
