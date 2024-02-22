@@ -4,7 +4,7 @@ CREATE TABLE `users` (
     `Username` VARCHAR(191) NULL,
     `Password` VARCHAR(191) NOT NULL,
     `Email` VARCHAR(191) NOT NULL,
-    `Token` VARCHAR(191) NOT NULL,
+    `Token` VARCHAR(191) NOT NULL DEFAULT '',
     `isVerified` BOOLEAN NOT NULL DEFAULT false,
     `RoleID` INTEGER NOT NULL,
 
@@ -31,6 +31,7 @@ CREATE TABLE `clients` (
     `ContactNumber` VARCHAR(191) NOT NULL,
     `Email` VARCHAR(191) NOT NULL,
     `Address` VARCHAR(191) NOT NULL,
+    `Gender` VARCHAR(191) NOT NULL,
     `CaseID` INTEGER NULL,
     `userId` INTEGER NOT NULL,
 
@@ -42,8 +43,6 @@ CREATE TABLE `clients` (
 CREATE TABLE `cases` (
     `CaseID` INTEGER NOT NULL AUTO_INCREMENT,
     `CaseName` VARCHAR(191) NOT NULL,
-    `CaseDescription` VARCHAR(191) NOT NULL,
-    `CaseStatus` VARCHAR(191) NOT NULL,
     `AssignedUserID` INTEGER NOT NULL,
 
     UNIQUE INDEX `cases_CaseID_key`(`CaseID`),
@@ -55,23 +54,12 @@ CREATE TABLE `document` (
     `DocumentID` INTEGER NOT NULL AUTO_INCREMENT,
     `DocumentName` VARCHAR(191) NOT NULL,
     `FilePath` VARCHAR(191) NOT NULL,
+    `Content` LONGBLOB NOT NULL,
     `UploadDate` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `ClientID` INTEGER NOT NULL,
 
     UNIQUE INDEX `document_DocumentID_key`(`DocumentID`),
     PRIMARY KEY (`DocumentID`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `communication` (
-    `CommunicationID` INTEGER NOT NULL AUTO_INCREMENT,
-    `CommunicationType` VARCHAR(191) NOT NULL,
-    `CommunicationDate` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `Description` VARCHAR(191) NOT NULL,
-    `ClientID` INTEGER NOT NULL,
-
-    UNIQUE INDEX `communication_CommunicationID_key`(`CommunicationID`),
-    PRIMARY KEY (`CommunicationID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
@@ -88,6 +76,3 @@ ALTER TABLE `cases` ADD CONSTRAINT `cases_AssignedUserID_fkey` FOREIGN KEY (`Ass
 
 -- AddForeignKey
 ALTER TABLE `document` ADD CONSTRAINT `document_ClientID_fkey` FOREIGN KEY (`ClientID`) REFERENCES `clients`(`ClientID`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `communication` ADD CONSTRAINT `communication_ClientID_fkey` FOREIGN KEY (`ClientID`) REFERENCES `clients`(`ClientID`) ON DELETE RESTRICT ON UPDATE CASCADE;

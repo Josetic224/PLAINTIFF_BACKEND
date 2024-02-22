@@ -21,6 +21,8 @@ import {
   updateUserPassword,
   updateUserToken,
   destroyToken,
+  createClientManually,
+  createClientBatchUpload,
   
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
@@ -266,36 +268,36 @@ export const signOut = async (req: Request, res: Response) => {
 
 //create a client manually
 
-// export const createClientController = async (req: Request, res: Response) => {
-//   try {
-//     const userId = parseInt(req.params.UserID); // Extract userId from URL params
+export const createClientController = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.UserID); // Extract userId from URL params
 
-//     // Get the authenticated user
-//     const authenticatedUser = await getUserById(userId);
+    // Get the authenticated user
+    const authenticatedUser = await getUserById(userId);
 
-//     // Check if user is authenticated
-//     if (!authenticatedUser) {
-//       return res.status(403).json("Forbidden"); // Send forbidden response if user is not authenticated
-//     }
+    // Check if user is authenticated
+    if (!authenticatedUser) {
+      return res.status(403).json("Forbidden"); // Send forbidden response if user is not authenticated
+    }
 
-//     // Check if userId from URL params matches authenticated user's ID
-//     if (userId !== authenticatedUser.UserID) {
-//       return res.status(403).json("Forbidden"); // Send forbidden response if userId doesn't match authenticated user's ID
-//     }
+    // Check if userId from URL params matches authenticated user's ID
+    if (userId !== authenticatedUser.UserID) {
+      return res.status(403).json("Forbidden"); // Send forbidden response if userId doesn't match authenticated user's ID
+    }
 
-//     // Extract client and case data from request body
-//     const { firstname, lastname, contactNumber, email, address, caseName, caseDescription, caseStatus, assignedUserId } = req.body;
+    // Extract client and case data from request body
+    const { firstname, lastname, contactNumber, email, address, Gender, caseName } = req.body;
 
-//     // Call createClient function to create a new client
-//     const newClient = await createClient(userId, firstname, lastname, contactNumber, email, address, caseName, caseDescription, caseStatus, assignedUserId);
+    // Call createClientManually function to create a new client
+    const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, userId);
 
-//     // Respond with the created client
-//     res.status(201).json(newClient);
-//   } catch (error) {
-//     console.error('Error creating client:', error);
-//     res.status(500).send('Internal server error');
-//   }
-// };
+    // Respond with the created client
+    res.status(201).json(newClient);
+  } catch (error) {
+    console.error('Error creating client:', error);
+    res.status(500).send('Internal server error');
+  }
+};
 
 
 
@@ -325,31 +327,26 @@ export const signOut = async (req: Request, res: Response) => {
 // };
 
 
-export const downloadTemplateController = (req: Request, res: Response) => {
-  try {
+export const downloadTemplateController = async (req: Request, res: Response) => {
+
+  try{
+  const userId = parseInt(req.params.UserID, 10);
+  const User = await getUserById(userId);
+  if (!User) {
+    return res.status(403).json("Forbidden");
+  }
+
+  
     // Create Excel workbook
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Clients');
 
     // Add headers to the worksheet
-    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'DateOfAppointment','TimeOfAppointment']);
-
-    // Set the DateOfAppointment column format
-    worksheet.getColumn('I').numFmt = 'dd/mm/yyyy'; // Custom format for date-time
-    // Add a comment to the cell next to the 'DateOfAppointment' header
-    const dateColumnHeaderCell = worksheet.getCell('I1');
-    dateColumnHeaderCell.note = 'Please enter dates in DD/MM/YYYY format';
-
-    // Set the TimeOfAppointment column format
-worksheet.getColumn('J').numFmt = 'hh:mm'; // Custom format for time
-
-// Add a comment to the cell next to the 'TimeOfAppointment' header
-const timeColumnHeaderCell = worksheet.getCell('J1');
-timeColumnHeaderCell.note = 'Please enter times in HH:mm format';
+    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address','Gender','CaseName']);
 
     // Send the Excel file as a response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="client_template.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="Plaintiff_Aid.xlsx"');
     workbook.xlsx.write(res)
       .then(() => {
         res.status(200).end();
@@ -359,6 +356,7 @@ timeColumnHeaderCell.note = 'Please enter times in HH:mm format';
     res.status(500).send('Internal server error');
   }
 };
+
  // Safe access, value will be undefined if obj is null or undefined
 
 
@@ -381,116 +379,59 @@ timeColumnHeaderCell.note = 'Please enter times in HH:mm format';
 // }
 
 
-function parseTime(timeString: string): string {
-  const match = timeString.match(/^(\d{1,2})(:(\d{2}))?\s*(am|pm)?$/i);
-  if (!match) {
-      throw new Error('Invalid time format');
-  }
-
-  const [_, hours, __, minutes, modifier] = match;
-  let hour = parseInt(hours, 10);
-  let minute = minutes ? parseInt(minutes, 10) : 0; // If minutes not provided, default to 0
-
-  if (modifier && modifier.toLowerCase() === 'pm' && hour < 12) {
-      hour += 12;
-  }
-  if (modifier && modifier.toLowerCase() === 'am' && hour === 12) {
-      hour = 0;
-  }
-
-  // Convert to 24-hour format
-  const formattedHour = hour.toString().padStart(2, '0');
-  const formattedMinute = minute.toString().padStart(2, '0');
-
-  return `${formattedHour}:${formattedMinute}:00`;
-}
-
-
-
-
 
 export const uploadFile = async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.UserID, 10);
-    const AssignedUserID = parseInt(req.params.AssignedUserID, 10)
-    try {
-      
-     const Id = await getUserById(userId)
-      if(!Id){
-        res.status(403).json("forbidden")
+  const userId = parseInt(req.params.UserID, 10);
+  const assignedUserId = parseInt(req.params.AssignedUserID)
+  
+  try {
+      // Check if user is authenticated
+      const user = await getUserById(userId);
+      if (!user) {
+          return res.status(403).json("Forbidden");
       }
 
-        if (!req.file) {
-            throw new Error('No file uploaded');
-        }
+      if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded' });
+      }
 
-        const workbook = new exceljs.Workbook();
+      const workbook = new exceljs.Workbook();
 
-        // Read the Excel file from memory
-        await workbook.xlsx.load(req.file.buffer);
+      // Read the Excel file from memory
+      await workbook.xlsx.load(req.file.buffer);
 
-        // Assuming the Excel file has a specific structure
-        const worksheet = workbook.getWorksheet(1);
+      // Get the first worksheet
+      const worksheet = workbook.getWorksheet(1);
 
-if(!worksheet){
- throw new Error("Worksheet not found")
-}
-        // Initialize row array
-        const clientsData: any[] = [];
+      if (!worksheet) {
+          throw new Error("Worksheet not found");
+      }
 
-        // Iterate through each row in the worksheet and push to clientsData
-        worksheet?.eachRow((row, rowNumber) => {
-            if (rowNumber > 1) { // Skip header row
-                clientsData.push(row.values);
-            }
-        });
+      // Initialize row array
+      const clientsData: any[] = [];
 
-        // Save data to database
-        await Promise.all(clientsData.map(async (row: any[]) => {
-          const [_, FirstName, LastName, ContactNumber, EmailObj, Address, CaseName, CaseDescription, CaseStatus, DateOfAppointment, TimeOfAppointment] = row;
-       
-          console.log(DateOfAppointment)
+      // Iterate through each row in the worksheet and push to clientsData
+      worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber > 1) { // Skip header row
+              clientsData.push(row.values);
+          }
+      });
+
+      // Save data to database
+      await Promise.all(clientsData.map(async (row: any[]) => {
+          const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName] = row;
+
           // Extracting email from the object
           const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
-          
-          console.log(row);
-                     
-            
-            // Save client data
-            await prisma.client.create({
-                data: {
-                    FirstName: FirstName,
-                    LastName: LastName,
-                    ContactNumber: ContactNumber,
-                    Email: Email,
-                    Address: Address,
-                    User: {
-                        connect: {
-                            UserID: userId
-                        }
-                    },
-                    Case: {
-                        create: {
-                            CaseName: CaseName,
-                            CaseDescription: CaseDescription,
-                            CaseStatus: CaseStatus,
-                            DateOfAppointment:DateOfAppointment,
-                            TimeOfAppointment:parseTime(TimeOfAppointment),
-                            AssignedUser:{
-                              connect:{
-                                UserID: AssignedUserID 
-                              }
-                            }
-                        }
-                    }
-                }
-            });
-        }));
 
-        res.status(200).json({ message: 'Data uploaded successfully' });
-    } catch (error) {
-        console.error('Error uploading file:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+          await createClientBatchUpload(userId,FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, assignedUserId);
+      }));
+
+      res.status(200).json({ message: 'Data uploaded successfully' });
+  } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 
@@ -501,80 +442,63 @@ if(!worksheet){
 
 
 
-async function sendEmails(client: Client, caseData: Case) {
-  // Create a transporter
-  const transporter = nodemailer.createTransport({
-      // Your email configuration
-      // Example for Gmail:
-      service: 'gmail',
-      auth: {
-          user: 'josephochiagha112@gmail.com',
-          pass: process.env.secretKey
-      }
-  });
 
-  // Mail options
-  const mailOptions = {
-      from: 'josephochiagha112@gmail.com',
-      to: client.Email,
-      subject: 'Appointment Reminder',
-      text: `Dear ${client.FirstName} ${client.LastName},\n\nThis is a reminder that you have an appointment today at ${caseData.TimeOfAppointment} for case "${caseData.CaseName}".\n\nBest regards,\n`
-  };
 
-  // Send mail
-  try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent:', info.response);
-  } catch (error) {
-      console.error('Error sending email:', error);
-  }
+function createClient(userId: number, firstname: any, lastname: any, contactNumber: any, email: any, address: any, caseName: any, caseDescription: any, caseStatus: any, assignedUserId: any) {
+  throw new Error("Function not implemented.");
 }
-
 // Function to check for appointments today and send reminder emails
-async function sendAppointmentReminders() {
-  try {
-      // Get today's date
-      const today = new Date();
-      // Strip time from today's date
-      today.setHours(0, 0, 0, 0);
+// export const sendAppointmentReminders = async()=>{
+//   try {
+//       // Get today's date
+//       const today = new Date();
+//       // Strip time from today's date
+//       today.setHours(0, 0, 0, 0);
 
-      // Find appointments with DateOfAppointment equal to today's date
-      const appointmentsToday = await prisma.case.findMany({
-          where: {
-              DateOfAppointment: today
-          },
-          include: {
-              Clients: true
-          }
-      });
+//       // Find appointments with DateOfAppointment equal to today's date
+//       const appointmentsToday = await prisma.case.findMany({
+//           where: {
+//               DateOfAppointment: today
+//           },
+//           include: {
+//               Clients: true
+//           }
+//       });
 
-      // Iterate through appointments today and send reminder emails
-      for (const appointment of appointmentsToday) {
-          for (const client of appointment.Clients) {
-              await sendEmails(client, appointment,);
-          }
-      }
-  } catch (error) {
-      console.error('Error checking appointments and sending reminders:', error);
-  } finally {
-      await prisma.$disconnect();
-  }
-}
+//       // Iterate through appointments today and send reminder emails
+//       for (const appointment of appointmentsToday) {
+//           for (const client of appointment.Clients) {
+//             const subject = 'Appointment Reminder'
+            
+//             const html = `Dear${client.FirstName}, please reminded of your Appointment with AgahalAWaSSOCIATES scheduled to take place today `
+//             sendEmail({
+//                 email:client.Email,
+//                 html,
+//                 subject
+//             })
+//           }
+//       }
+//   } catch (error) {
+//       console.error('Error checking appointments and sending reminders:', error);
+//   } finally {
+//       await prisma.$disconnect();
+//   }
+// }
 
-// Call the function to check for appointments and send reminder emails
-sendAppointmentReminders();
+// // Call the function to check for appointments and send reminder emails
+// sendAppointmentReminders();
 
 
 
-import cron from "node-cron"
+// import cron from "node-cron"
 
-// Your sendAppointmentReminders function here...
+// // Your sendAppointmentReminders function here...
 
-// Schedule the job to run every day at 1pm
-cron.schedule('15 13 * * *', () => {
-  console.log('Running appointment reminder job...');
-  sendAppointmentReminders();
-});
+// // Schedule the job to run every day at 1pm
+// cron.schedule('15 13 * * *', () => {
+//   console.log('Running appointment reminder job...');
+//   sendAppointmentReminders();
+// });
 
 
 // export const Allclients = async (req:Request, res:Response)=>{

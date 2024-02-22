@@ -53,3 +53,33 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     }
     next();
 };
+
+
+
+
+// Validation middleware for user login
+export const validateUserLogin = [
+    // Validate email
+    check('email')
+        .trim()
+        .notEmpty().withMessage('Email is required')
+        .isEmail().withMessage('Invalid email address'),
+
+    // Validate password
+    check('password')
+        .trim()
+        .notEmpty().withMessage('Password is required'),
+
+    // Handle validation errors
+    (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: false,
+                message: 'Validation failed',
+                errors: errors.array(),
+            });
+        }
+        next();
+    },
+];

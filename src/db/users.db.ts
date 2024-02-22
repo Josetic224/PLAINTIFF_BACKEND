@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
 
+
 const prisma = new PrismaClient();
 
 export const getAllUsers = () => prisma.user.findMany();
@@ -61,7 +62,6 @@ export const comparePassword = async (password: string, user: object) => {
   }
   return true;
 };
-
 
 
 //update password
@@ -191,36 +191,74 @@ export const getClientByLastname = async(lastname:string)=>{
 
 
 
-// export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string, caseName:string, caseDescription:string, caseStatus:string, assignedUserId:number)=>{
+export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string,Gender:string,CaseName:string,assignedUserId:number)=>{
+  try {
+    const newClient = await prisma.client.create({
+      data: {
+        FirstName: firstname,
+        LastName: lastname,
+        ContactNumber: contactNumber,
+        Email: email,
+        Address: address,
+        Gender:Gender,
+        User:{connect:{UserID:userId}}, // Connect client to user
+        Case:{
+          create:{
+            CaseName:CaseName,
+            AssignedUserID:assignedUserId
+          }
+        }
+      },
+      include:{
+        Case:true
+      }
+    })
+return newClient
+  } catch (error:any) {
+    throw new Error(error)
+  }
+}
+
+
+export const createClientBatchUpload = async(userId:number, FirstName:string,LastName:string,ContactNumber:string,Email:string,Address:string,Gender:string,CaseName:string,assignedUserId:number)=>{
+  try {
+    const newClient = await prisma.client.create({
+      
+      data: {
+        FirstName: FirstName,
+        LastName: LastName,
+        ContactNumber: ContactNumber,
+        Email: Email,
+        Address: Address,
+        Gender:Gender,
+        User:{connect:{UserID:userId}}, // Connect client to user
+        Case:{
+          create:{
+            CaseName:CaseName,
+            AssignedUserID:assignedUserId
+          }
+        }
+      },
+      include:{
+        Case:true
+      }
+    })
+return newClient
+  } catch (error:any) {
+    throw new Error(error)
+  }
+}
+
+//get case mapped to assignedUserId
+
+// `export const getAssignedUser = async (assignedUserId: number) => {
 //   try {
-//     const newClient = await prisma.client.create({
-//       data: {
-//         FirstName: firstname,
-//         LastName: lastname,
-//         ContactNumber: contactNumber,
-//         Email: email,
-//         Address: address,
-//         User:{connect:{UserID:userId}}, // Connect client to user
-//         Case:{
-//           create:{
-//             CaseName:caseName,
-//             CaseDescription:caseDescription,
-//             CaseStatus:caseStatus,
-//             AssignedUserID:assignedUserId
-//           }
-//         }
-//       },
-//       include:{
-//         Case:true
-//       }
-//     })
-// return newClient
-//   } catch (error:any) {
-//     throw new Error(error)
+//     const user = await prisma.case.findUnique({
+//       where: { AssignedUserID: assignedUserId }
+//     });
+//     return user;
+//   } catch (error) {
+//     console.error("Error fetching user by ID:", error);
+//     throw new Error("Failed to fetch user by ID.");
 //   }
-// }
-
-
-
-
-
+// };`

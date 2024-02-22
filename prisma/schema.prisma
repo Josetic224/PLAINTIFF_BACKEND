@@ -47,6 +47,7 @@ model Client {
   ContactNumber   String
   Email           String
   Address         String
+  Gender          String
   Case            Case?      @relation(fields: [CaseID], references: [CaseID])
   CaseID          Int?
   User            User       @relation( fields: [userId], references: [UserID])
@@ -62,12 +63,8 @@ model Client {
 model Case {
   CaseID          Int          @id @default(autoincrement())
   CaseName        String
-  CaseDescription String
-  CaseStatus      String
-  DateOfAppointment DateTime
-  TimeOfAppointment String
+   AssignedUser    User         @relation(fields: [AssignedUserID], references: [UserID])
   AssignedUserID  Int
-  AssignedUser    User         @relation(fields: [AssignedUserID], references: [UserID])
   Clients         Client[]  
 
   @@unique([CaseID])

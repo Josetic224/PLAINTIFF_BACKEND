@@ -16,10 +16,11 @@ import {
   signOut,
   downloadTemplateController,
   uploadFile,
+  // sendAppointmentReminders,
 
 } from "../controllers/user.controller";
 
-import { handleValidationErrors, validateUserRegistration } from "../validator/validator";
+import { handleValidationErrors, validateUserLogin, validateUserRegistration } from "../validator/validator";
 
 // import { updateUser } from "../db/users.db";
 
@@ -27,11 +28,12 @@ export default (router: express.Router) => {
   router.get("/users", getAllUsersController);
 
   router.post("/signup",validateUserRegistration,handleValidationErrors, signUp);
-  router.post("/login",  signIn);
+  router.post("/login", validateUserLogin, signIn);
   router.get("/verify/:UserID/:Token", verifyEmail)
-  router.post("/forgotPassword", forgotPassword)
+  router.get("/forgotPassword", forgotPassword)
   router.put("/reset/:UserID", resetPassword)
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)
   router.post("/upload-Template/:UserID/:AssignedUserID",upload.single("file"),uploadFile)
+  // router.post("/notify/:UserID",sendAppointmentReminders)
   };
