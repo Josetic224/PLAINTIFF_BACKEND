@@ -1,11 +1,13 @@
 import express, { Application, Request, Response } from "express";
 import "dotenv/config";
 import routers from "./routers";
+import helmet from "helmet";
 
 const app: Application = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(helmet())
 
 const port: number = 3000;
 

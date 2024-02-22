@@ -32,6 +32,6 @@ export default (router: express.Router) => {
   router.post("/forgotPassword", forgotPassword)
   router.put("/reset/:UserID", resetPassword)
   router.get("/signout/:UserID/:Token", signOut)
-  router.get("/download-template/:UserID", downloadTemplateController),
-  router.post("/upload-Template/:UserID/:AssignedUserID",upload.single("file"),uploadFile )
+  router.get("/download-template/:UserID", downloadTemplateController)
+  router.post("/upload-Template/:UserID/:AssignedUserID",upload.single("file"),uploadFile)
   };

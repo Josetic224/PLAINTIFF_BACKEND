@@ -52,7 +52,7 @@ model Client {
   User            User       @relation( fields: [userId], references: [UserID])
   userId  Int
   Documents       Document[]
-  Communications  Communication[]
+
 
   @@unique([ClientID])
   @@map("clients")
@@ -64,6 +64,8 @@ model Case {
   CaseName        String
   CaseDescription String
   CaseStatus      String
+  DateOfAppointment DateTime
+  TimeOfAppointment String
   AssignedUserID  Int
   AssignedUser    User         @relation(fields: [AssignedUserID], references: [UserID])
   Clients         Client[]  
@@ -86,16 +88,4 @@ model Document {
   @@map("document")
 }
 
-// Communication model
-model Communication {
-  CommunicationID  Int      @id @default(autoincrement())
-  CommunicationType String
-  CommunicationDate DateTime @default(now())
-  Description      String
-  ClientID         Int
-  Client           Client   @relation(fields: [ClientID], references: [ClientID])
-
-  @@unique([CommunicationID])
-  @@map("communication")
-}
 

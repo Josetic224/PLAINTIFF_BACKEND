@@ -1,9 +1,13 @@
 import express, { NextFunction, Request, Response } from "express";
 
-import { PrismaClient } from '@prisma/client';
-import { readXlsxFile } from "read-excel-file"
+import { Case, Client, PrismaClient, User } from '@prisma/client';
+import nodemailer from "nodemailer"
+import dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config({ path: ".env" });
 const prisma = new PrismaClient();
-import * as  exceljs from "exceljs"
+import * as  exceljs from "exceljs";
 
 import {
   getAllUsers,
@@ -298,6 +302,29 @@ export const signOut = async (req: Request, res: Response) => {
 //function to download excel sheet from the server for the batch upload
 
 // Endpoint for downloading the Excel template
+// export const downloadTemplateController = (req: Request, res: Response) => {
+//   try {
+//     // Create Excel workbook
+//     const workbook = new exceljs.Workbook();
+//     const worksheet = workbook.addWorksheet('Clients');
+
+//     // Add headers to the worksheet
+//     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'AssignedUserID']);
+
+//     // Send the Excel file as a response
+//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+//     res.setHeader('Content-Disposition', 'attachment; filename="client_template.xlsx"');
+//     workbook.xlsx.write(res)
+//       .then(() => {
+//         res.status(200).end();
+//       });
+//   } catch (error) {
+//     console.error('Error downloading template:', error);
+//     res.status(500).send('Internal server error');
+//   }
+// };
+
+
 export const downloadTemplateController = (req: Request, res: Response) => {
   try {
     // Create Excel workbook
@@ -305,7 +332,20 @@ export const downloadTemplateController = (req: Request, res: Response) => {
     const worksheet = workbook.addWorksheet('Clients');
 
     // Add headers to the worksheet
-    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'AssignedUserID']);
+    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'DateOfAppointment','TimeOfAppointment']);
+
+    // Set the DateOfAppointment column format
+    worksheet.getColumn('I').numFmt = 'dd/mm/yyyy'; // Custom format for date-time
+    // Add a comment to the cell next to the 'DateOfAppointment' header
+    const dateColumnHeaderCell = worksheet.getCell('I1');
+    dateColumnHeaderCell.note = 'Please enter dates in DD/MM/YYYY format';
+
+    // Set the TimeOfAppointment column format
+worksheet.getColumn('J').numFmt = 'hh:mm'; // Custom format for time
+
+// Add a comment to the cell next to the 'TimeOfAppointment' header
+const timeColumnHeaderCell = worksheet.getCell('J1');
+timeColumnHeaderCell.note = 'Please enter times in HH:mm format';
 
     // Send the Excel file as a response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -319,6 +359,52 @@ export const downloadTemplateController = (req: Request, res: Response) => {
     res.status(500).send('Internal server error');
   }
 };
+ // Safe access, value will be undefined if obj is null or undefined
+
+
+// Function to parse time strings like "4pm", "3am" into a specific format
+// function parseTime(timeString: string): string {
+//   const match = timeString.match(/^(\d{1,2})([ap]m)$/i);
+//   if (!match) {
+//       throw new Error('Invalid time format');
+//   }
+
+//   const [_, hours, modifier] = match;
+//   let hour = parseInt(hours, 10);
+//   if (modifier.toLowerCase() === 'pm' && hour < 12) {
+//       hour += 12;
+//   }
+//   if (modifier.toLowerCase() === 'am' && hour === 12) {
+//       hour = 0;
+//   }
+//   return hour.toString().padStart(2, '0') + ":00";
+// }
+
+
+function parseTime(timeString: string): string {
+  const match = timeString.match(/^(\d{1,2})(:(\d{2}))?\s*(am|pm)?$/i);
+  if (!match) {
+      throw new Error('Invalid time format');
+  }
+
+  const [_, hours, __, minutes, modifier] = match;
+  let hour = parseInt(hours, 10);
+  let minute = minutes ? parseInt(minutes, 10) : 0; // If minutes not provided, default to 0
+
+  if (modifier && modifier.toLowerCase() === 'pm' && hour < 12) {
+      hour += 12;
+  }
+  if (modifier && modifier.toLowerCase() === 'am' && hour === 12) {
+      hour = 0;
+  }
+
+  // Convert to 24-hour format
+  const formattedHour = hour.toString().padStart(2, '0');
+  const formattedMinute = minute.toString().padStart(2, '0');
+
+  return `${formattedHour}:${formattedMinute}:00`;
+}
+
 
 
 
@@ -327,6 +413,12 @@ export const uploadFile = async (req: Request, res: Response) => {
     const userId = parseInt(req.params.UserID, 10);
     const AssignedUserID = parseInt(req.params.AssignedUserID, 10)
     try {
+      
+     const Id = await getUserById(userId)
+      if(!Id){
+        res.status(403).json("forbidden")
+      }
+
         if (!req.file) {
             throw new Error('No file uploaded');
         }
@@ -339,6 +431,9 @@ export const uploadFile = async (req: Request, res: Response) => {
         // Assuming the Excel file has a specific structure
         const worksheet = workbook.getWorksheet(1);
 
+if(!worksheet){
+ throw new Error("Worksheet not found")
+}
         // Initialize row array
         const clientsData: any[] = [];
 
@@ -351,13 +446,15 @@ export const uploadFile = async (req: Request, res: Response) => {
 
         // Save data to database
         await Promise.all(clientsData.map(async (row: any[]) => {
-          const [_, FirstName, LastName, ContactNumber, EmailObj, Address, CaseName, CaseDescription, CaseStatus] = row;
-
+          const [_, FirstName, LastName, ContactNumber, EmailObj, Address, CaseName, CaseDescription, CaseStatus, DateOfAppointment, TimeOfAppointment] = row;
+       
+          console.log(DateOfAppointment)
           // Extracting email from the object
           const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
           
           console.log(row);
-
+                     
+            
             // Save client data
             await prisma.client.create({
                 data: {
@@ -376,6 +473,8 @@ export const uploadFile = async (req: Request, res: Response) => {
                             CaseName: CaseName,
                             CaseDescription: CaseDescription,
                             CaseStatus: CaseStatus,
+                            DateOfAppointment:DateOfAppointment,
+                            TimeOfAppointment:parseTime(TimeOfAppointment),
                             AssignedUser:{
                               connect:{
                                 UserID: AssignedUserID 
@@ -396,12 +495,93 @@ export const uploadFile = async (req: Request, res: Response) => {
 
 
 
-//get all clients
-export const Allclients = async (req:Request, res:Response)=>{
-  //perform the try catch 
+
+
+
+
+
+
+async function sendEmails(client: Client, caseData: Case) {
+  // Create a transporter
+  const transporter = nodemailer.createTransport({
+      // Your email configuration
+      // Example for Gmail:
+      service: 'gmail',
+      auth: {
+          user: 'josephochiagha112@gmail.com',
+          pass: process.env.secretKey
+      }
+  });
+
+  // Mail options
+  const mailOptions = {
+      from: 'josephochiagha112@gmail.com',
+      to: client.Email,
+      subject: 'Appointment Reminder',
+      text: `Dear ${client.FirstName} ${client.LastName},\n\nThis is a reminder that you have an appointment today at ${caseData.TimeOfAppointment} for case "${caseData.CaseName}".\n\nBest regards,\n`
+  };
+
+  // Send mail
   try {
-    
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent:', info.response);
   } catch (error) {
-    res.status(500).json("error")
+      console.error('Error sending email:', error);
   }
 }
+
+// Function to check for appointments today and send reminder emails
+async function sendAppointmentReminders() {
+  try {
+      // Get today's date
+      const today = new Date();
+      // Strip time from today's date
+      today.setHours(0, 0, 0, 0);
+
+      // Find appointments with DateOfAppointment equal to today's date
+      const appointmentsToday = await prisma.case.findMany({
+          where: {
+              DateOfAppointment: today
+          },
+          include: {
+              Clients: true
+          }
+      });
+
+      // Iterate through appointments today and send reminder emails
+      for (const appointment of appointmentsToday) {
+          for (const client of appointment.Clients) {
+              await sendEmails(client, appointment,);
+          }
+      }
+  } catch (error) {
+      console.error('Error checking appointments and sending reminders:', error);
+  } finally {
+      await prisma.$disconnect();
+  }
+}
+
+// Call the function to check for appointments and send reminder emails
+sendAppointmentReminders();
+
+
+
+import cron from "node-cron"
+
+// Your sendAppointmentReminders function here...
+
+// Schedule the job to run every day at 1pm
+cron.schedule('15 13 * * *', () => {
+  console.log('Running appointment reminder job...');
+  sendAppointmentReminders();
+});
+
+
+// export const Allclients = async (req:Request, res:Response)=>{
+//   //perform the try catch 
+//   try {
+    
+//   } catch (error) {
+//     res.status(500).json("error")
+//   }
+// }

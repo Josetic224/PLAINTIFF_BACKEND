@@ -191,34 +191,34 @@ export const getClientByLastname = async(lastname:string)=>{
 
 
 
-export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string, caseName:string, caseDescription:string, caseStatus:string, assignedUserId:number)=>{
-  try {
-    const newClient = await prisma.client.create({
-      data: {
-        FirstName: firstname,
-        LastName: lastname,
-        ContactNumber: contactNumber,
-        Email: email,
-        Address: address,
-        User:{connect:{UserID:userId}}, // Connect client to user
-        Case:{
-          create:{
-            CaseName:caseName,
-            CaseDescription:caseDescription,
-            CaseStatus:caseStatus,
-            AssignedUserID:assignedUserId
-          }
-        }
-      },
-      include:{
-        Case:true
-      }
-    })
-return newClient
-  } catch (error:any) {
-    throw new Error(error)
-  }
-}
+// export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string, caseName:string, caseDescription:string, caseStatus:string, assignedUserId:number)=>{
+//   try {
+//     const newClient = await prisma.client.create({
+//       data: {
+//         FirstName: firstname,
+//         LastName: lastname,
+//         ContactNumber: contactNumber,
+//         Email: email,
+//         Address: address,
+//         User:{connect:{UserID:userId}}, // Connect client to user
+//         Case:{
+//           create:{
+//             CaseName:caseName,
+//             CaseDescription:caseDescription,
+//             CaseStatus:caseStatus,
+//             AssignedUserID:assignedUserId
+//           }
+//         }
+//       },
+//       include:{
+//         Case:true
+//       }
+//     })
+// return newClient
+//   } catch (error:any) {
+//     throw new Error(error)
+//   }
+// }
 
 
 
