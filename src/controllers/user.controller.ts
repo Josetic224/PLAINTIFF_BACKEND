@@ -23,7 +23,11 @@ import {
   destroyToken,
   createClientManually,
   createClientBatchUpload,
-  
+  getAllClients,
+  getClientByLastname,
+  getClientByCaseId,
+  getClientByFirstname,
+
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -48,7 +52,7 @@ export const signUp = async (req: Request, res: Response) => {
   const { email, password, legalFirmName } = req.body;
 
   try {
-    if(!email || !password || !legalFirmName){
+    if (!email || !password || !legalFirmName) {
       res.status(400).json("one or more input fields are empty")
     }
     let user = await getUserByEmail(email);
@@ -68,9 +72,9 @@ export const signUp = async (req: Request, res: Response) => {
     const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${user.UserID}/${user.Token}`
     const html = `<a href="${link}">Click here to verify your email</a>`;
     sendEmail({
-        email: user.Email,
-        html,
-        subject
+      email: user.Email,
+      html,
+      subject
     })
 
     // Send a response indicating success
@@ -85,7 +89,7 @@ export const signUp = async (req: Request, res: Response) => {
 
 //verify email function
 
-export const verifyEmail= async (req: Request, res: Response) => {
+export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.UserID, 10);
     const token = req.params.Token;
@@ -103,89 +107,95 @@ export const verifyEmail= async (req: Request, res: Response) => {
     // If the verification was successful, update the user's isVerified status
     const updatedUser = await verification(user.UserID, true);
 
-   if(updatedUser.isVerified ===true){
-    return res.status(200).send("<h1>You have been successfully verified. Kindly visit the login page.</h1>");
+    if (updatedUser.isVerified === true) {
+      return res.status(200).send("<h1>You have been successfully verified. Kindly visit the login page.</h1>");
 
-   }
-//write the function if there is error in verifying the token
+    }
+    //write the function if there is error in verifying the token
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       // Handle token expiration
-      const userId = parseInt (req.params.UserID, 10);
+      const userId = parseInt(req.params.UserID, 10);
       const updateUser = await getUserById(userId)
-      
+
       if (updateUser) {
         // Create a new token for the user
         const newToken = await createNewToken({ email: updateUser.Email });
-  
+
         // Update the user's token with the new one
         updateUser.Token = newToken;
-      // Save the updated user with the new token
-      const savedUser = await updateUserPassword(updateUser.UserID, newToken);
+        // Save the updated user with the new token
+        const savedUser = await updateUserPassword(updateUser.UserID, newToken);
 
-      const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
-      console.log(link)
-      sendEmail({
-        email: updateUser.Email,
-        html: `<a href="${link}">Click here to verify your email</a>`,
-        subject: "RE-VERIFY YOUR ACCOUNT"
-      });
-      return res.status(401).send("<h1>This link is expired. Kindly check your email for another email to verify.</h1>");
+        const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
+        console.log(link)
+        sendEmail({
+          email: updateUser.Email,
+          html: `<a href="${link}">Click here to verify your email</a>`,
+          subject: "RE-VERIFY YOUR ACCOUNT"
+        });
+        return res.status(401).send("<h1>This link is expired. Kindly check your email for another email to verify.</h1>");
 
-    }  else {
-      return res.status(500).json({
-        message:error.message,
-      });
+      } else {
+        return res.status(500).json({
+          message: error.message,
+        });
+      }
     }
-  }
-
-    }
-
 
   }
 
 
-  export const signIn = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-  
-    try {
-      const existingUser = await getUserByEmail(email);
-      if (!existingUser) {
-        throw new Error(`User ${email} does not exist`);
-      }
-  
-      if (!compareSync(password, existingUser.Password)) {
-        throw new Error(`Incorrect Password ${password}`);
-      }
-  
-      // Create a token for the logged-in user
-      const token = await createNewToken({ email: existingUser.Email, id: existingUser.UserID });
-  
-      // Assign the token to the existingUser's Token property
-      existingUser.Token = token;
-  
-      // Update the user record in the database with the new token
-      await updateUserToken(existingUser.UserID, token)
-   
-      if(existingUser.isVerified === true){
-        res.status(200).json({
-          message: `welcome!, ${existingUser.Username}`,
-          data:existingUser,
-        })
-      }
-      else{
-        res.status(400).json("sorry, you are not verified yet!. check email for verification link")
-      }
-  
-    } catch (err: any) {
-      return res.status(400).json({ status: false, message: err.message });
+}
+
+
+export const signIn = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    const existingUser = await getUserByEmail(email);
+    if (!existingUser) {
+      throw new Error(`User ${email} does not exist`);
     }
-  };
-  
+
+    if (!compareSync(password, existingUser.Password)) {
+      throw new Error(`Incorrect Password ${password}`);
+    }
+
+    // Create a token for the logged-in user
+    const token = await createNewToken({ email: existingUser.Email, id: existingUser.UserID });
+
+    // Assign the token to the existingUser's Token property
+    existingUser.Token = token;
+
+    // Update the user record in the database with the new token
+    await updateUserToken(existingUser.UserID, token)
+
+    if (existingUser.isVerified === true) {
+      res.status(200).json({
+        message: `welcome!, ${existingUser.Username}`,
+        data: existingUser,
+      })
+      res.redirect('')
+    }
+    else {
+      res.status(400).json("sorry, you are not verified yet!. check email for verification link")
+    }
+
+  } catch (err: any) {
+    return res.status(400).json({ status: false, message: err.message });
+  }
+};
+
 
 export const forgotPassword = async (req: Request, res: Response) => {
-  const { email} = req.body;
+  const { email } = req.body;
+  const userId = parseInt(req.params.UserID, 10)
   try {
+    const checkUserId = await getUserById(userId)
+    if (!checkUserId) {
+      return res.status(400).json("user not found")
+    }
     // Check if the User exists
     const existingUser = await getUserByEmail(email);
     if (!existingUser) {
@@ -193,7 +203,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     //after this, send the user a reset password link
-    else{
+    else {
       const link = `${req.protocol}://${req.get('host')}/api_v1/reset/${existingUser.UserID}`;
       console.log(link)
       sendEmail({
@@ -204,33 +214,33 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     }
     return res.status(200).json({
-      message:"kindly check your email to reset your password"
+      message: "kindly check your email to reset your password"
     })
 
-  }catch(error){
-     res.status(500).json(error)
+  } catch (error) {
+    res.status(500).json(error)
   }
 }
 //after this, write a fuction that resets the password itself
 
-export const resetPassword = async(req:Request, res:Response)=>{
+export const resetPassword = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.UserID, 10)
-  const {newPassword, confirmPassword} = req.body.password
-  if(!newPassword || !confirmPassword){
-   return res.status(400).json("password and confirmPassword can't be empty!")
-  }
+    const { newPassword, confirmPassword } = req.body.password
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json("password and confirmPassword can't be empty!")
+    }
 
-  if(newPassword !== confirmPassword){
-    return res.status(400).json("passwords do not match")
-  }
-  //after this, hash the password
-  await updateUserPassword(userId, newPassword)
-  return res.status(200).json("Password reset successfully")
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json("passwords do not match")
+    }
+    //after this, hash the password
+    await updateUserPassword(userId, newPassword)
+    return res.status(200).json("Password reset successfully")
   } catch (error) {
     res.status(500).json(error)
   }
-  
+
 }
 
 
@@ -238,7 +248,7 @@ export const resetPassword = async(req:Request, res:Response)=>{
 export const signOut = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.UserID, 10);
-   
+
     // Get user by id
     const user = await getUserById(userId);
     if (!user) {
@@ -301,48 +311,23 @@ export const createClientController = async (req: Request, res: Response) => {
 
 
 
-//function to download excel sheet from the server for the batch upload
-
-// Endpoint for downloading the Excel template
-// export const downloadTemplateController = (req: Request, res: Response) => {
-//   try {
-//     // Create Excel workbook
-//     const workbook = new exceljs.Workbook();
-//     const worksheet = workbook.addWorksheet('Clients');
-
-//     // Add headers to the worksheet
-//     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'CaseName', 'CaseDescription', 'CaseStatus', 'AssignedUserID']);
-
-//     // Send the Excel file as a response
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//     res.setHeader('Content-Disposition', 'attachment; filename="client_template.xlsx"');
-//     workbook.xlsx.write(res)
-//       .then(() => {
-//         res.status(200).end();
-//       });
-//   } catch (error) {
-//     console.error('Error downloading template:', error);
-//     res.status(500).send('Internal server error');
-//   }
-// };
-
 
 export const downloadTemplateController = async (req: Request, res: Response) => {
 
-  try{
-  const userId = parseInt(req.params.UserID, 10);
-  const User = await getUserById(userId);
-  if (!User) {
-    return res.status(403).json("Forbidden");
-  }
+  try {
+    const userId = parseInt(req.params.UserID, 10);
+    const User = await getUserById(userId);
+    if (!User) {
+      return res.status(403).json("Forbidden");
+    }
 
-  
+
     // Create Excel workbook
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Clients');
 
     // Add headers to the worksheet
-    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address','Gender','CaseName']);
+    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName']);
 
     // Send the Excel file as a response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -357,80 +342,61 @@ export const downloadTemplateController = async (req: Request, res: Response) =>
   }
 };
 
- // Safe access, value will be undefined if obj is null or undefined
-
-
-// Function to parse time strings like "4pm", "3am" into a specific format
-// function parseTime(timeString: string): string {
-//   const match = timeString.match(/^(\d{1,2})([ap]m)$/i);
-//   if (!match) {
-//       throw new Error('Invalid time format');
-//   }
-
-//   const [_, hours, modifier] = match;
-//   let hour = parseInt(hours, 10);
-//   if (modifier.toLowerCase() === 'pm' && hour < 12) {
-//       hour += 12;
-//   }
-//   if (modifier.toLowerCase() === 'am' && hour === 12) {
-//       hour = 0;
-//   }
-//   return hour.toString().padStart(2, '0') + ":00";
-// }
 
 
 
-export const uploadFile = async (req: Request, res: Response) => {
+
+export const ClientBatchUpload = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.UserID, 10);
   const assignedUserId = parseInt(req.params.AssignedUserID)
-  
+
   try {
-      // Check if user is authenticated
-      const user = await getUserById(userId);
-      if (!user) {
-          return res.status(403).json("Forbidden");
+    // Check if user is authenticated
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(403).json("Forbidden");
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const workbook = new exceljs.Workbook();
+
+    // Read the Excel file from memory
+    await workbook.xlsx.load(req.file.buffer);
+
+    // Get the first worksheet
+    const worksheet = workbook.getWorksheet(1);
+
+    if (!worksheet) {
+      throw new Error("Worksheet not found");
+    }
+
+    // Initialize row array
+    const clientsData: any[] = [];
+
+    // Iterate through each row in the worksheet and push to clientsData
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 1) { // Skip header row
+        clientsData.push(row.values);
       }
+    });
 
-      if (!req.file) {
-          return res.status(400).json({ error: 'No file uploaded' });
-      }
+    // Save data to database
+    await Promise.all(clientsData.map(async (row: any[]) => {
+      const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName] = row;
 
-      const workbook = new exceljs.Workbook();
+      // Extracting email from the object
+      const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
 
-      // Read the Excel file from memory
-      await workbook.xlsx.load(req.file.buffer);
+      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, assignedUserId);
+    }));
 
-      // Get the first worksheet
-      const worksheet = workbook.getWorksheet(1);
-
-      if (!worksheet) {
-          throw new Error("Worksheet not found");
-      }
-
-      // Initialize row array
-      const clientsData: any[] = [];
-
-      // Iterate through each row in the worksheet and push to clientsData
-      worksheet.eachRow((row, rowNumber) => {
-          if (rowNumber > 1) { // Skip header row
-              clientsData.push(row.values);
-          }
-      });
-
-      // Save data to database
-      await Promise.all(clientsData.map(async (row: any[]) => {
-          const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName] = row;
-
-          // Extracting email from the object
-          const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
-
-          await createClientBatchUpload(userId,FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, assignedUserId);
-      }));
-
-      res.status(200).json({ message: 'Data uploaded successfully' });
+    res.status(200).json({ message: 'Data uploaded successfully' });
   } catch (error) {
-      console.error('Error uploading file:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('Error uploading file:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -444,68 +410,112 @@ export const uploadFile = async (req: Request, res: Response) => {
 
 
 
-function createClient(userId: number, firstname: any, lastname: any, contactNumber: any, email: any, address: any, caseName: any, caseDescription: any, caseStatus: any, assignedUserId: any) {
-  throw new Error("Function not implemented.");
+
+
+
+export const Allclients = async (req: Request, res: Response) => {
+  //perform the try catch 
+  try {
+    const userId = parseInt(req.params.UserID, 10)
+    const user = await getUserById(userId)
+    if (!user) {
+      res.status(403).json("forbidden")
+    }
+    const getClients = await getAllClients()
+    if (!getClients) {
+      return res.status(401).json({
+        status: false,
+        message: "no clients found"
+      })
+    }
+    res.status(200).json({
+      status: true,
+      data: getClients
+    })
+
+  } catch (error: any) {
+    res.status(500).json({
+      status: false,
+      message: error.message
+    })
+  }
 }
-// Function to check for appointments today and send reminder emails
-// export const sendAppointmentReminders = async()=>{
-//   try {
-//       // Get today's date
-//       const today = new Date();
-//       // Strip time from today's date
-//       today.setHours(0, 0, 0, 0);
 
-//       // Find appointments with DateOfAppointment equal to today's date
-//       const appointmentsToday = await prisma.case.findMany({
-//           where: {
-//               DateOfAppointment: today
-//           },
-//           include: {
-//               Clients: true
-//           }
-//       });
-
-//       // Iterate through appointments today and send reminder emails
-//       for (const appointment of appointmentsToday) {
-//           for (const client of appointment.Clients) {
-//             const subject = 'Appointment Reminder'
-            
-//             const html = `Dear${client.FirstName}, please reminded of your Appointment with AgahalAWaSSOCIATES scheduled to take place today `
-//             sendEmail({
-//                 email:client.Email,
-//                 html,
-//                 subject
-//             })
-//           }
-//       }
-//   } catch (error) {
-//       console.error('Error checking appointments and sending reminders:', error);
-//   } finally {
-//       await prisma.$disconnect();
-//   }
-// }
-
-// // Call the function to check for appointments and send reminder emails
-// sendAppointmentReminders();
+export const clientByFirstname = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.UserID);
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(403).json("Forbidden"); // Send response and exit the function
+    }
+    const {firstname}  = req.body;
+    const findClient = await getClientByFirstname(firstname);
+    if (findClient === undefined || findClient === null) {
+      return res.status(401).json({
+        status: false,
+        message: "Client could not be found by first name"
+      });
+    }
+    //If client is found, send response with client data
+    res.status(200).json({
+      status: true,
+      data: findClient
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      status: false,
+      message: error.message
+    });
+  }
+};
 
 
 
-// import cron from "node-cron"
+export const clientByLastname = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.UserID, 10)
+    const user = await getUserById(userId)
+    if (!user) {
+      res.status(403).json("forbidden")
+    }
+    const { lastname } = req.body
+    const findClient = await getClientByLastname(lastname)
+    if (findClient === undefined || findClient === null) {
+      res.status(401).json({
+        status: false,
+        message: "no client found"
+      })
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      status: false,
+      message: error.message
+    })
+  }
+}
+export const clientByCaseId = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.UserID, 10)
+    const user = await getUserById(userId)
+    if (!user) {
+      res.status(403).json({
+        status: false,
+        message: "forbidden"
+      })
+    }
+    const { caseId } = req.body
+    const findClientByCaseId = await getClientByCaseId(caseId)
+    if (findClientByCaseId === undefined || findClientByCaseId === null) {
+      res.status(401).json({
+        status: false,
+        message: "client not found"
+      })
+    }
 
-// // Your sendAppointmentReminders function here...
-
-// // Schedule the job to run every day at 1pm
-// cron.schedule('15 13 * * *', () => {
-//   console.log('Running appointment reminder job...');
-//   sendAppointmentReminders();
-// });
-
-
-// export const Allclients = async (req:Request, res:Response)=>{
-//   //perform the try catch 
-//   try {
-    
-//   } catch (error) {
-//     res.status(500).json("error")
-//   }
-// }
+  } catch (error: any) {
+    res.status(500).json({
+      status: false,
+      message: error.message
+    })
+  }
+}

@@ -177,18 +177,41 @@ export const destroyToken = async (id: number) => {
 export const getAllClients = ()=>prisma.client.findMany()
 
 //get client by Firstname
-export const getClientByFirstname = async(firstname:string)=>{
-  prisma.client.findFirst({
-    where:{FirstName:firstname}
-  })
+export const getClientByFirstname = async (firstname: string) => {
+  try {
+    const client = await prisma.client.findFirst({
+      where: {
+        FirstName: firstname // Specify the field and its value directly
+      }
+    });
+    return client;
+  } catch (error:any) {
+    throw new Error(`Error finding client by firstname: ${error.message}`);
+  }
+};
 
-}
 
 
 export const getClientByLastname = async(lastname:string)=>{
-  prisma.client.findFirst({where:{LastName:lastname}})
+  try {
+   const client = await prisma.client.findFirst({where:{LastName:lastname}})
+   return client;
+  } catch (error) {
+    throw new Error(`Error finding client by firstname`)
+  }
+ 
 }
 
+
+export const getClientByCaseId = async(caseId:number)=>{
+  try {
+    
+  } catch (error) {
+    throw new Error(`Error finding Client by CaseId`)
+  }
+  const client = await prisma.case.findFirst({where:{CaseID:caseId}})
+  return client;
+}
 
 
 export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string,Gender:string,CaseName:string,assignedUserId:number)=>{
@@ -249,16 +272,3 @@ return newClient
   }
 }
 
-//get case mapped to assignedUserId
-
-// `export const getAssignedUser = async (assignedUserId: number) => {
-//   try {
-//     const user = await prisma.case.findUnique({
-//       where: { AssignedUserID: assignedUserId }
-//     });
-//     return user;
-//   } catch (error) {
-//     console.error("Error fetching user by ID:", error);
-//     throw new Error("Failed to fetch user by ID.");
-//   }
-// };`

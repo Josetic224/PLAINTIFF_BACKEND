@@ -15,12 +15,17 @@ import {
   verifyEmail,
   signOut,
   downloadTemplateController,
-  uploadFile,
-  // sendAppointmentReminders,
+  createClientController,
+  ClientBatchUpload,
+  Allclients,
+  clientByFirstname,
+  clientByLastname,
+  // senAppointmentReminders,
 
 } from "../controllers/user.controller";
 
 import { handleValidationErrors, validateUserLogin, validateUserRegistration } from "../validator/validator";
+import { createClientManually } from "../db/users.db";
 
 // import { updateUser } from "../db/users.db";
 
@@ -30,10 +35,14 @@ export default (router: express.Router) => {
   router.post("/signup",validateUserRegistration,handleValidationErrors, signUp);
   router.post("/login", validateUserLogin, signIn);
   router.get("/verify/:UserID/:Token", verifyEmail)
-  router.get("/forgotPassword", forgotPassword)
-  router.put("/reset/:UserID", resetPassword)
+  router.post("/forgotPassword/:UserID", forgotPassword)
+  router.get("/reset/:UserID", resetPassword)
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)
-  router.post("/upload-Template/:UserID/:AssignedUserID",upload.single("file"),uploadFile)
-  // router.post("/notify/:UserID",sendAppointmentReminders)
+  router.post("/batch_Upload/:UserID/:AssignedUserID",upload.single("file"),ClientBatchUpload)
+  router.post('/save_client/:UserID',createClientController)
+  router.get("/getClients/:UserID",Allclients)
+  router.get("/getClients/firstname/:UserID", clientByFirstname)
+  router.get("/getClients/lastname/:UserID", clientByLastname)
+  
   };
