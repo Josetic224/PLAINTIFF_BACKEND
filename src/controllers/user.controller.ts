@@ -176,7 +176,7 @@ export const signIn = async (req: Request, res: Response) => {
         message: `welcome!, ${existingUser.Username}`,
         data: existingUser,
       })
-      res.redirect('')
+      
     }
     else {
       res.status(400).json("sorry, you are not verified yet!. check email for verification link")
