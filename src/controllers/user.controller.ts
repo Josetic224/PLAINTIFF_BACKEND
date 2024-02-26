@@ -49,10 +49,10 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 };
 
 export const signUp = async (req: Request, res: Response) => {
-  const { email, password, legalFirmName } = req.body;
+  const { email, password, confirmPassword,PhoneNumber,FirmName } = req.body;
 
   try {
-    if (!email || !password || !legalFirmName) {
+    if (!email || !password || !FirmName) {
       res.status(400).json("one or more input fields are empty")
     }
     let user = await getUserByEmail(email);
@@ -61,9 +61,12 @@ export const signUp = async (req: Request, res: Response) => {
       throw new Error("User already exists");
     }
 
+    if(password !== confirmPassword){
+      return res.status(401).json("both passwords do not match")
+    }
     //sign the user
     // Create the user
-    user = await createUser(legalFirmName, password, email);
+    user = await createUser(FirmName, password, email,PhoneNumber);
 
 
 
