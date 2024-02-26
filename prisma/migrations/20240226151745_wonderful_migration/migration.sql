@@ -4,6 +4,7 @@ CREATE TABLE "users" (
     "Username" TEXT,
     "Password" TEXT NOT NULL,
     "Email" TEXT NOT NULL,
+    "PhoneNumber" INTEGER NOT NULL,
     "Token" TEXT NOT NULL DEFAULT '',
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "RoleID" INTEGER NOT NULL,

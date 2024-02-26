@@ -43,7 +43,7 @@ export const createUser = async (
         Username:FirmName,
         Email: email.toLocaleLowerCase(),
         Password: hashedPassword,
-        ContactNumber:PhoneNumber,
+        PhoneNumber:PhoneNumber,
         RoleID: 1,
         Token: token
       }
