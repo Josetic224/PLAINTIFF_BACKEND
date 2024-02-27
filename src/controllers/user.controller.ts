@@ -217,38 +217,33 @@ export const forgotPassword = async (req: Request, res: Response) => {
         html: `<a href="${link}">Click here to reset your password</a>`,
         subject: "PASSWORD RESET"
       });
-
+      // Redirect to resetPassword controller
+      return res.redirect(303, `/api_v1/reset/${existingUser.UserID}`);
     }
-    return res.status(200).json({
-      message: "kindly check your email to reset your password"
-    })
-
   } catch (error) {
     res.status(500).json(error)
   }
 }
 //after this, write a fuction that resets the password itself
 
-export const resetPassword = async (req: Request, res: Response) => {
+export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const userId = parseInt(req.params.UserID, 10)
-    const { newPassword, confirmPassword } = req.body.password
+    const userId: number = parseInt(req.params.UserID, 10);
+    const { newPassword, confirmPassword } = req.body;
     if (!newPassword || !confirmPassword) {
-      return res.status(400).json("password and confirmPassword can't be empty!")
+      return res.status(400).json("password and confirmPassword can't be empty!");
     }
 
     if (newPassword !== confirmPassword) {
-      return res.status(400).json("passwords do not match")
+      return res.status(400).json("passwords do not match");
     }
     //after this, hash the password
-    await updateUserPassword(userId, newPassword)
-    return res.status(200).json("Password reset successfully")
+    await updateUserPassword(userId, newPassword);
+    return res.status(200).json("Password reset successfully");
   } catch (error) {
-    res.status(500).json(error)
+    return res.status(500).json(error);
   }
-
 }
-
 
 //function to sign out the user... 
 export const signOut = async (req: Request, res: Response) => {
