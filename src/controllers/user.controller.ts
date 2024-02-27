@@ -224,7 +224,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     res.status(500).json(error)
   }
 }
-after this, write a fuction that resets the password itself
+// after this, write a fuction that resets the password itself
 
 export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
   try {

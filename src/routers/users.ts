@@ -10,7 +10,7 @@ import {
   getAllUsersController,
   signUp,
   signIn,
-  // forgotPassword,
+  forgotPassword,
   resetPassword,
   verifyEmail,
   signOut,
@@ -46,7 +46,7 @@ router.get("/verify/:UserID/:Token", async (req, res) => {
   }
 });
 
-  // router.post("/forgotPassword/:UserID", forgotPassword)
+  router.post("/forgotPassword/:UserID", forgotPassword)
   router.put("/reset/:UserID", resetPassword);
 
   router.get("/signout/:UserID/:Token", signOut)
