@@ -205,7 +205,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Check if the User exists
     const existingUser = await getUserByEmail(email);
     if (!existingUser) {
-      throw new Error(`User ${email} does not exist`);
+      throw new Error(`User does not exist`);
     }
 
     //after this, send the user a reset password link
