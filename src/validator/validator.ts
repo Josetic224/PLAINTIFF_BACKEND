@@ -7,18 +7,31 @@ const isNameValid = (value: any) => {
     return allowedCharacters.test(value);
 };
 
+// Custom validator function for phone number
+const isPhoneNumberValid = (value: any) => {
+    const phoneNumberRegex = /^[0-9]+$/; // Regex pattern to allow only numbers
+    return phoneNumberRegex.test(value);
+};
+
 // Relaxed password validation regex pattern
 const passwordRegex = /^.{6,}$/;
 
 // Validation middleware for user registration
 export const validateUserRegistration = [
-    // Validate username
-    check('legalFirmName')
+    // Validate FirmName
+    check('FirmName')
         .trim()
-        .notEmpty().withMessage('Username is required')
-        .isLength({ min: 3, max: 20 }).withMessage('legalFirmName must be between 3 and 20 characters long')
-        .custom(isNameValid).withMessage('Invalid characters in the username. Only alphanumeric characters and underscores are allowed'),
- 
+        .notEmpty().withMessage('FirmName is required')
+        .isLength({ min: 3, max: 20 }).withMessage('FirmName must be between 3 and 20 characters long')
+        .custom(isNameValid).withMessage('Invalid characters in the FirmName. Only alphanumeric characters are allowed'),
+
+    // Validate PhoneNumber
+    check('PhoneNumber')
+        .trim()
+        .notEmpty().withMessage('PhoneNumber is required')
+        .isLength({ min: 11, max: 11 }).withMessage('PhoneNumber must be 11 digits long')
+        .custom(isPhoneNumberValid).withMessage('Invalid characters in the PhoneNumber. Only numbers are allowed'),
+
     // Validate email
     check('email')
         .trim()
@@ -44,18 +57,6 @@ export const validateUserRegistration = [
         next();
     },
 ];
-
-// Custom middleware to handle validation errors
-export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-};
-
-
-
 
 // Validation middleware for user login
 export const validateUserLogin = [

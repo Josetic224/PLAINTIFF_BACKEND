@@ -31,7 +31,7 @@ export const createUser = async (
   FirmName: string,
   password: string,
   email: string,
-  PhoneNumber:number
+  PhoneNumber:string
 ) => {
   try {
     const hashedPassword = hashSync(password, 10);

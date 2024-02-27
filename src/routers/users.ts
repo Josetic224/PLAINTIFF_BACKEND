@@ -24,7 +24,7 @@ import {
 
 } from "../controllers/user.controller";
 
-import { handleValidationErrors, validateUserLogin, validateUserRegistration } from "../validator/validator";
+import { validateUserLogin, validateUserRegistration } from "../validator/validator";
 import { createClientManually } from "../db/users.db";
 
 // import { updateUser } from "../db/users.db";
@@ -32,9 +32,20 @@ import { createClientManually } from "../db/users.db";
 export default (router: express.Router) => {
   router.get("/users", getAllUsersController);
 
-  router.post("/signup",validateUserRegistration,handleValidationErrors, signUp);
+  router.post("/signup",validateUserRegistration,signUp);
   router.post("/login", validateUserLogin, signIn);
-  router.get("/verify/:UserID/:Token", verifyEmail)
+  // Route for verifying email
+router.get("/verify/:UserID/:Token", async (req, res) => {
+  try {
+    // Call your verifyEmail handler
+    await verifyEmail(req, res);
+  } catch (error) {
+    // Handle any errors
+    console.error("Error verifying email:", error);
+    res.status(500).send("Internal server error");
+  }
+});
+
   router.post("/forgotPassword/:UserID", forgotPassword)
   router.get("/reset/:UserID", resetPassword)
   router.get("/signout/:UserID/:Token", signOut)

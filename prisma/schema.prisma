@@ -17,7 +17,7 @@ model User {
   Username   String?
   Password   String
   Email      String  @unique
-  PhoneNumber Int
+  PhoneNumber String
   Token      String  @default("")
   isVerified  Boolean @default(false)
   RoleID     Int

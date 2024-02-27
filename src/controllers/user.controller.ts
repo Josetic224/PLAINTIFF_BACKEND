@@ -49,10 +49,11 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 };
 
 export const signUp = async (req: Request, res: Response) => {
-  const { email, password, confirmPassword,PhoneNumber,FirmName } = req.body;
+  const { email, password, confirmPassword, PhoneNumber, FirmName } = req.body;
+  console.log(req.body)
 
   try {
-    if (!email || !password || !FirmName) {
+    if (!email || !password || !FirmName || !PhoneNumber) {
       res.status(400).json("one or more input fields are empty")
     }
     let user = await getUserByEmail(email);
@@ -61,12 +62,12 @@ export const signUp = async (req: Request, res: Response) => {
       throw new Error("User already exists");
     }
 
-    if(password !== confirmPassword){
+    if (password !== confirmPassword) {
       return res.status(401).json("both passwords do not match")
     }
     //sign the user
     // Create the user
-    user = await createUser(FirmName, password, email,PhoneNumber);
+    user = await createUser(FirmName, password, email, PhoneNumber);
 
 
 
@@ -92,10 +93,12 @@ export const signUp = async (req: Request, res: Response) => {
 
 //verify email function
 
-export const verifyEmail = async (req: Request, res: Response) => {
+
+
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = parseInt(req.params.UserID, 10);
-    const token = req.params.Token;
+    const userId: number = parseInt(req.params.UserID, 10);
+    const token: string = req.params.Token;
 
     // Get the intended user by id
     const user = await getUserById(userId);
@@ -109,16 +112,16 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
     // If the verification was successful, update the user's isVerified status
     const updatedUser = await verification(user.UserID, true);
+if (updatedUser.isVerified === true) {
+  // Redirect to signin immediately
+  res.redirect('/login');
+  return;
+}
 
-    if (updatedUser.isVerified === true) {
-      return res.status(200).send("<h1>You have been successfully verified. Kindly visit the login page.</h1>");
-
-    }
-    //write the function if there is error in verifying the token
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       // Handle token expiration
-      const userId = parseInt(req.params.UserID, 10);
+      const userId: number = parseInt(req.params.UserID, 10);
       const updateUser = await getUserById(userId)
 
       if (updateUser) {
@@ -137,19 +140,19 @@ export const verifyEmail = async (req: Request, res: Response) => {
           html: `<a href="${link}">Click here to verify your email</a>`,
           subject: "RE-VERIFY YOUR ACCOUNT"
         });
-        return res.status(401).send("<h1>This link is expired. Kindly check your email for another email to verify.</h1>");
+        res.status(401).send("<h1>This link is expired. Kindly check your email for another email to verify.</h1>");
+        return;
 
       } else {
-        return res.status(500).json({
+        res.status(500).json({
           message: error.message,
         });
+        return;
       }
     }
-
   }
-
-
 }
+
 
 
 export const signIn = async (req: Request, res: Response) => {
@@ -179,7 +182,7 @@ export const signIn = async (req: Request, res: Response) => {
         message: `welcome!, ${existingUser.Username}`,
         data: existingUser,
       })
-      
+
     }
     else {
       res.status(400).json("sorry, you are not verified yet!. check email for verification link")
@@ -451,7 +454,7 @@ export const clientByFirstname = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(403).json("Forbidden"); // Send response and exit the function
     }
-    const {firstname}  = req.body;
+    const { firstname } = req.body;
     const findClient = await getClientByFirstname(firstname);
     if (findClient === undefined || findClient === null) {
       return res.status(401).json({
