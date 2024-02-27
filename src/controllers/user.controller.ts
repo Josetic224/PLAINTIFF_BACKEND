@@ -50,7 +50,6 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password, confirmPassword, PhoneNumber, FirmName } = req.body;
-  console.log(req.body)
 
   try {
     if (!email || !password || !FirmName || !PhoneNumber) {
