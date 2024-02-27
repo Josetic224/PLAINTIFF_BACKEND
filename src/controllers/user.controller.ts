@@ -34,6 +34,7 @@ import * as jwt from "jsonwebtoken";
 import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
+import { generateDynamicEmail } from "../middleware/html";
 
 
 
@@ -73,7 +74,7 @@ export const signUp = async (req: Request, res: Response) => {
     const subject = 'Email Verification'
     //jwt.verify(token, process.env.secret)
     const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${user.UserID}/${user.Token}`
-    const html = `<a href="${link}">Click here to verify your email</a>`;
+    const html = generateDynamicEmail(link, FirmName)
     sendEmail({
       email: user.Email,
       html,
