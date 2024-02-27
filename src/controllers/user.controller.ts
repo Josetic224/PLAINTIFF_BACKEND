@@ -212,7 +212,6 @@ export const signIn = async (req: Request, res: Response) => {
 
 export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const userId: number = parseInt(req.params.UserID, 10);
     const { email, newPassword } = req.body;
     const user = await getUserByEmail(email)
    if(!user){
@@ -224,7 +223,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
 
    
     //after this, hash the password
-    await updateUserPassword(userId,email, newPassword);
+    await updateUserPassword(email, newPassword);
     return res.status(200).json("Password reset successfully");
   } catch (error) {
     return res.status(500).json(error);

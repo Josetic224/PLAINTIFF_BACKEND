@@ -44,7 +44,7 @@ router.get("/verify/:UserID/:Token", async (req, res) => {
     res.status(500).send("Internal server error");
   }
 });
-  router.put("/reset/:UserID", resetPassword);
+  router.put("/reset/", resetPassword);
 
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)

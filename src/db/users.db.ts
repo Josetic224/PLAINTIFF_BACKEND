@@ -67,13 +67,13 @@ export const comparePassword = async (password: string, user: object) => {
 
 
 //update password
-export const updateUserPassword = async (userId: number,email:string, 
+export const updateUserPassword = async (email:string, 
   newPassword: string,
 ) => {
   try {
     // Update the user's email and password
     const updatedUser = await prisma.user.update({
-      where: { UserID: userId,
+      where: { 
       Email:email},
       data:
       {
