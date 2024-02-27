@@ -59,7 +59,7 @@ export const signUp = async (req: Request, res: Response) => {
     let user = await getUserByEmail(email);
 
     if (user) {
-      throw new Error("User already exists");
+      throw new Error("Email already exists");
     }
 
     if (password !== confirmPassword) {
