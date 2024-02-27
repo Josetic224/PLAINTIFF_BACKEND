@@ -61,7 +61,7 @@ export const signUp = async (req: Request, res: Response) => {
     if (user) {
       throw new Error("Email already exists");
     }
-
+  
     if (password !== confirmPassword) {
       return res.status(401).json("both passwords do not match")
     }
