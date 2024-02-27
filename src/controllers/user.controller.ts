@@ -100,11 +100,12 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     const userId: number = parseInt(req.params.UserID, 10);
     const token: string = req.params.Token;
 
-    // Get the intended user by id
+    // Get the intended user by ID
     const user = await getUserById(userId);
 
     if (!user) {
-      throw new Error("User not found");
+      res.status(404).json({ message: "User not found" }); // User not found
+      return;
     }
 
     // Verify the token after getting the user ID
@@ -112,17 +113,22 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
 
     // If the verification was successful, update the user's isVerified status
     const updatedUser = await verification(user.UserID, true);
-if (updatedUser.isVerified === true) {
-  // Redirect to signin immediately
-  res.redirect('/api_v1/login');
-  return;
-}
 
-  } catch (error) {
+    if (updatedUser.isVerified === true) {
+      // User successfully verified
+      res.status(200).json({ message: "User successfully verified. Please log in to continue." });
+      return;
+    } else {
+      // Verification failed for some reason
+      res.status(400).json({ message: "Verification failed" });
+      return;
+    }
+    
+  } catch (error:any) {
     if (error instanceof jwt.JsonWebTokenError) {
       // Handle token expiration
       const userId: number = parseInt(req.params.UserID, 10);
-      const updateUser = await getUserById(userId)
+      const updateUser = await getUserById(userId);
 
       if (updateUser) {
         // Create a new token for the user
@@ -134,24 +140,32 @@ if (updatedUser.isVerified === true) {
         const savedUser = await updateUserToken(updateUser.UserID, newToken);
 
         const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
-        console.log(link)
+        console.log(link);
+
+        // Send re-verification email
         sendEmail({
           email: updateUser.Email,
-          html: `<a href="${link}">Click here to verify your email</a>`,
+          html: generateDynamicEmail(link, updateUser.Username),
           subject: "RE-VERIFY YOUR ACCOUNT"
         });
-        res.status(401).send("<h1>This link is expired. Kindly check your email for another email to verify.</h1>");
-        return;
 
+        // Inform the user that the link is expired and a new email has been sent for re-verification
+        res.status(401).json({ message: "This link is expired. Kindly check your email for another email to verify." });
+        return;
       } else {
-        res.status(500).json({
-          message: error.message,
-        });
+        // User not found
+        res.status(404).json({ message: "User not found" });
         return;
       }
+    } else {
+      // Other errors
+      res.status(500).json({ message: error.message });
+      return;
     }
   }
 }
+
+
 
 
 
