@@ -114,7 +114,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     const updatedUser = await verification(user.UserID, true);
 if (updatedUser.isVerified === true) {
   // Redirect to signin immediately
-  res.redirect('/login');
+  res.redirect('/api_v1/login');
   return;
 }
 
