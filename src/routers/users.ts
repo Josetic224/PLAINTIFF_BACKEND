@@ -10,7 +10,7 @@ import {
   getAllUsersController,
   signUp,
   signIn,
-  forgotPassword,
+  // forgotPassword,
   resetPassword,
   verifyEmail,
   signOut,
@@ -46,8 +46,9 @@ router.get("/verify/:UserID/:Token", async (req, res) => {
   }
 });
 
-  router.post("/forgotPassword/:UserID", forgotPassword)
-  router.get("/reset/:UserID", resetPassword)
+  // router.post("/forgotPassword/:UserID", forgotPassword)
+  router.put("/reset/:UserID", resetPassword);
+
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)
   router.post("/batch_Upload/:UserID/:AssignedUserID",upload.single("file"),ClientBatchUpload)

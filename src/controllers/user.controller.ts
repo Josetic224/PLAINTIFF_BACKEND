@@ -224,12 +224,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
     res.status(500).json(error)
   }
 }
-//after this, write a fuction that resets the password itself
+after this, write a fuction that resets the password itself
 
 export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
   try {
     const userId: number = parseInt(req.params.UserID, 10);
     const { newPassword, confirmPassword } = req.body;
+    console.log(req.body)
     if (!newPassword || !confirmPassword) {
       return res.status(400).json("password and confirmPassword can't be empty!");
     }
@@ -280,7 +281,14 @@ export const signOut = async (req: Request, res: Response) => {
 //create a client manually
 
 export const createClientController = async (req: Request, res: Response) => {
+  const { firstname, lastname, contactNumber, email, address, Gender, caseName } = req.body;
+
+
   try {
+
+    if (!req.body) {
+      return res.status(400).json({ error: "Request body is missing" });
+    }
     const userId = parseInt(req.params.UserID); // Extract userId from URL params
 
     // Get the authenticated user
@@ -297,8 +305,7 @@ export const createClientController = async (req: Request, res: Response) => {
     }
 
     // Extract client and case data from request body
-    const { firstname, lastname, contactNumber, email, address, Gender, caseName } = req.body;
-
+   
     // Call createClientManually function to create a new client
     const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, userId);
 
