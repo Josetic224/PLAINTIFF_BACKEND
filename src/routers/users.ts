@@ -10,7 +10,6 @@ import {
   getAllUsersController,
   signUp,
   signIn,
-  forgotPassword,
   resetPassword,
   verifyEmail,
   signOut,
@@ -45,8 +44,6 @@ router.get("/verify/:UserID/:Token", async (req, res) => {
     res.status(500).send("Internal server error");
   }
 });
-
-  router.post("/forgotPassword/:UserID", forgotPassword)
   router.put("/reset/:UserID", resetPassword);
 
   router.get("/signout/:UserID/:Token", signOut)

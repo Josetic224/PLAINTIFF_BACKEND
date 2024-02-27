@@ -131,7 +131,7 @@ if (updatedUser.isVerified === true) {
         // Update the user's token with the new one
         updateUser.Token = newToken;
         // Save the updated user with the new token
-        const savedUser = await updateUserPassword(updateUser.UserID, newToken);
+        const savedUser = await updateUserToken(updateUser.UserID, newToken);
 
         const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
         console.log(link)
@@ -194,52 +194,23 @@ export const signIn = async (req: Request, res: Response) => {
 };
 
 
-export const forgotPassword = async (req: Request, res: Response) => {
-  const { email } = req.body;
-  const userId = parseInt(req.params.UserID, 10)
-  try {
-    const checkUserId = await getUserById(userId)
-    if (!checkUserId) {
-      return res.status(400).json("user not found")
-    }
-    // Check if the User exists
-    const existingUser = await getUserByEmail(email);
-    if (!existingUser) {
-      throw new Error(`User does not exist`);
-    }
 
-    //after this, send the user a reset password link
-    else {
-      const link = `${req.protocol}://${req.get('host')}/api_v1/reset/${existingUser.UserID}`;
-      console.log(link)
-      sendEmail({
-        email: existingUser.Email,
-        html: `<a href="${link}">Click here to reset your password</a>`,
-        subject: "PASSWORD RESET"
-      });
-      // Redirect to resetPassword controller
-      return res.redirect(303, `/api_v1/reset/${existingUser.UserID}`);
-    }
-  } catch (error) {
-    res.status(500).json(error)
-  }
-}
-// after this, write a fuction that resets the password itself
 
 export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
   try {
     const userId: number = parseInt(req.params.UserID, 10);
-    const { newPassword, confirmPassword } = req.body;
-    console.log(req.body)
-    if (!newPassword || !confirmPassword) {
-      return res.status(400).json("password and confirmPassword can't be empty!");
+    const { email, newPassword } = req.body;
+    const user = await getUserByEmail(email)
+   if(!user){
+    return res.status(401).json("email not found")
+   }
+    if (!newPassword) {
+      return res.status(400).json("Password Field is empty");
     }
 
-    if (newPassword !== confirmPassword) {
-      return res.status(400).json("passwords do not match");
-    }
+   
     //after this, hash the password
-    await updateUserPassword(userId, newPassword);
+    await updateUserPassword(userId,email, newPassword);
     return res.status(200).json("Password reset successfully");
   } catch (error) {
     return res.status(500).json(error);
