@@ -64,6 +64,7 @@ model Client {
 model Case {
   CaseID          Int          @id @default(autoincrement())
   CaseName        String
+  CaseDescription String
    AssignedUser    User         @relation(fields: [AssignedUserID], references: [UserID])
   AssignedUserID  Int
   Clients         Client[]  

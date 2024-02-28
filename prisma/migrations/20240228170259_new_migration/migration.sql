@@ -4,7 +4,7 @@ CREATE TABLE "users" (
     "Username" TEXT,
     "Password" TEXT NOT NULL,
     "Email" TEXT NOT NULL,
-    "PhoneNumber" INTEGER NOT NULL,
+    "PhoneNumber" TEXT NOT NULL,
     "Token" TEXT NOT NULL DEFAULT '',
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "RoleID" INTEGER NOT NULL,
@@ -40,6 +40,7 @@ CREATE TABLE "clients" (
 CREATE TABLE "cases" (
     "CaseID" SERIAL NOT NULL,
     "CaseName" TEXT NOT NULL,
+    "CaseDescription" TEXT NOT NULL,
     "AssignedUserID" INTEGER NOT NULL,
 
     CONSTRAINT "cases_pkey" PRIMARY KEY ("CaseID")

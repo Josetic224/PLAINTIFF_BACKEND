@@ -265,7 +265,7 @@ export const signOut = async (req: Request, res: Response) => {
 //create a client manually
 
 export const createClientController = async (req: Request, res: Response) => {
-  const { firstname, lastname, contactNumber, email, address, Gender, caseName } = req.body;
+  const { firstname, lastname, contactNumber, email, address, Gender, caseName,CaseDescription } = req.body;
 
 
   try {
@@ -291,7 +291,7 @@ export const createClientController = async (req: Request, res: Response) => {
     // Extract client and case data from request body
    
     // Call createClientManually function to create a new client
-    const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, userId);
+    const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName,CaseDescription, userId);
 
     // Respond with the created client
     res.status(201).json(newClient);
@@ -319,7 +319,7 @@ export const downloadTemplateController = async (req: Request, res: Response) =>
     const worksheet = workbook.addWorksheet('Clients');
 
     // Add headers to the worksheet
-    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName']);
+    worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
 
     // Send the Excel file as a response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -377,12 +377,12 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
 
     // Save data to database
     await Promise.all(clientsData.map(async (row: any[]) => {
-      const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName] = row;
+      const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
 
       // Extracting email from the object
       const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
 
-      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, assignedUserId);
+      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, CaseDescription, assignedUserId);
     }));
 
     res.status(200).json({ message: 'Data uploaded successfully' });

@@ -219,7 +219,7 @@ export const getClientByCaseId = async(caseId:number)=>{
 }
 
 
-export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string,Gender:string,CaseName:string,assignedUserId:number)=>{
+export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string,Gender:string,CaseName:string, CaseDescription:string, assignedUserId:number)=>{
   try {
     const newClient = await prisma.client.create({
       data: {
@@ -233,6 +233,7 @@ export const createClientManually = async(userId:number, firstname:string,lastna
         Case:{
           create:{
             CaseName:CaseName,
+            CaseDescription:CaseDescription,
             AssignedUserID:assignedUserId
           }
         }
@@ -248,7 +249,7 @@ return newClient
 }
 
 
-export const createClientBatchUpload = async(userId:number, FirstName:string,LastName:string,ContactNumber:string,Email:string,Address:string,Gender:string,CaseName:string,assignedUserId:number)=>{
+export const createClientBatchUpload = async(userId:number, FirstName:string,LastName:string,ContactNumber:string,Email:string,Address:string,Gender:string,CaseName:string, CaseDescription:string, assignedUserId:number)=>{
   try {
     const newClient = await prisma.client.create({
       
@@ -263,6 +264,7 @@ export const createClientBatchUpload = async(userId:number, FirstName:string,Las
         Case:{
           create:{
             CaseName:CaseName,
+            CaseDescription:CaseDescription,
             AssignedUserID:assignedUserId
           }
         }
