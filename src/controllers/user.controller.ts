@@ -202,8 +202,8 @@ export const signIn = async (req: Request, res: Response) => {
       res.status(400).json("sorry, you are not verified yet!. check email for verification link")
     }
 
-  } catch (err: any) {
-    return res.status(400).json({ status: false, message: err.message });
+  } catch (err:any) {
+    return res.status(500).json({ status: false, message:err.message});
   }
 };
 

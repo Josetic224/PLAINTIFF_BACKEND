@@ -34,16 +34,8 @@ export default (router: express.Router) => {
   router.post("/signup",validateUserRegistration,signUp);
   router.post("/login", validateUserLogin, signIn);
   // Route for verifying email
-router.get("/verify/:UserID/:Token", async (req, res) => {
-  try {
-    // Call your verifyEmail handler
-    await verifyEmail(req, res);
-  } catch (error) {
-    // Handle any errors
-    console.error("Error verifying email:", error);
-    res.status(500).send("Internal server error");
-  }
-});
+router.get("/verify/:UserID/:Token",verifyEmail)
+
   router.put("/reset/", resetPassword);
 
   router.get("/signout/:UserID/:Token", signOut)
