@@ -87,7 +87,7 @@ export const signUp = async (req: Request, res: Response) => {
     // Handle errors
     console.error(err);
     // Send an error response
-    return res.status(400).json({ status: false, message: err.message });
+    return res.status(500).json({ status: false, message: err.message });
   }
 };
 
@@ -139,7 +139,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         // Save the updated user with the new token
         const savedUser = await updateUserToken(updateUser.UserID, newToken);
 
-        const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
+        const link = `https://plaintiff-backend.onrender.com/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
         console.log(link);
 
         // Send re-verification email
