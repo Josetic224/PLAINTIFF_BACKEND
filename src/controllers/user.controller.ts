@@ -83,7 +83,8 @@ export const signUp = async (req: Request, res: Response) => {
 
     const subject = 'Email Verification'
     //jwt.verify(token, process.env.secret)
-    const link = `https://plaintiff-backend.onrender.com/${user.Token}`
+    const link = `https://plaintiffaid.vercel.app/#/verification/${user.Token}`
+    
     const html = generateDynamicEmail(link, FirmName)
     sendEmail({
       email: user.Email,
@@ -166,7 +167,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         const updatedUser = await updateUserToken(user.UserID, Token);
 
         // Send re-verification email
-        const link = `https://plaintiff-backend.onrender.com/${Token}`;
+        const link = `https://plaintiffaid.vercel.app/#/verification/${user.Token}`;
         sendEmail({
           email: user.Email,
           html: generateDynamicEmail(link, user.Username),
