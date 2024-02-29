@@ -97,65 +97,78 @@ export const signUp = async (req: Request, res: Response) => {
 
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId: number = parseInt(req.params.UserID, 10);
     const token: string = req.params.Token;
+    
+    // Verify the token
+    const decodedToken: any = await jwtverify(token);
 
-    // Get the intended user by ID
-    const user = await getUserById(userId);
+    // Extract the email from the decoded token
+    const email: string = decodedToken.email;
+
+    // Retrieve the user by email
+    const user = await getUserByEmail(email);
 
     if (!user) {
-      res.status(404).json({ message: "User not found" }); // User not found
+      res.status(404).json({ message: "User not found" });
       return;
     }
 
-    // Verify the token after getting the user ID
-    await jwtverify(token);
+    // If the user is already verified, return a message
+    if (user.isVerified) {
+      res.status(200).json({ message: "User is already verified" });
+      return;
+    }
 
-    // If the verification was successful, update the user's isVerified status
+    // Update the user's isVerified status
     const updatedUser = await verification(user.UserID, true);
 
-    if (updatedUser.isVerified === true) {
-      // User successfully verified
-      res.status(200).json({ message: "User successfully verified. Please log in to continue." }),
-      res.redirect('https://yourfrontendurl.com/login')
+    if (updatedUser.isVerified) {
+      res.status(200).json({ message: "User successfully verified. Please log in to continue." }), res.redirect("https://plaintiffaid.vercel.app//verification/:token")
+
       return;
     } else {
-      // Verification failed for some reason
       res.status(400).json({ message: "Verification failed" });
       return;
     }
-    
   } catch (error:any) {
+    // Handle token verification errors
     if (error instanceof jwt.JsonWebTokenError) {
       // Handle token expiration
-      const userId: number = parseInt(req.params.UserID, 10);
-      const updateUser = await getUserById(userId);
+      try {
+        const token: string = req.params.Token; // Define token here
 
-      if (updateUser) {
+        const decodedToken: any = jwt.decode(token);
+
+        // Extract the email from the decoded token
+        const email: string = decodedToken.email;
+
+        // Retrieve the user by email
+        const user = await getUserByEmail(email);
+
+        if (!user) {
+          res.status(404).json({ message: "User not found" });
+          return;
+        }
+
         // Create a new token for the user
-        const newToken = await createNewToken({ email: updateUser.Email });
+        const Token = await createNewToken({ email: user.Email });
 
         // Update the user's token with the new one
-        updateUser.Token = newToken;
-        // Save the updated user with the new token
-        const savedUser = await updateUserToken(updateUser.UserID, newToken);
-
-        const link = `https://plaintiff-backend.onrender.com/api_v1/verify/${updateUser.Token}`;
-        console.log(link);
+        const updatedUser = await updateUserToken(user.UserID, Token);
 
         // Send re-verification email
+        const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${Token}`;
         sendEmail({
-          email: updateUser.Email,
-          html: generateDynamicEmail(link, updateUser.Username),
+          email: user.Email,
+          html: generateDynamicEmail(link, user.Username),
           subject: "RE-VERIFY YOUR ACCOUNT"
         });
 
         // Inform the user that the link is expired and a new email has been sent for re-verification
         res.status(401).json({ message: "This link is expired. Kindly check your email for another email to verify." });
         return;
-      } else {
-        // User not found
-        res.status(404).json({ message: "User not found" });
+      } catch (error:any) {
+        res.status(500).json({ message: error.message });
         return;
       }
     } else {
@@ -164,8 +177,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
       return;
     }
   }
-}
-
+};
 
 
 
