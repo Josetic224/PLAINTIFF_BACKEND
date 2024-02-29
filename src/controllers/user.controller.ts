@@ -123,8 +123,8 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     const updatedUser = await verification(user.UserID, true);
 
     if (updatedUser.isVerified) {
-      res.status(200).json({ message: "User successfully verified. Please log in to continue." }), res.redirect("https://plaintiffaid.vercel.app//verification/:token")
-
+      const loginLink = `https://plaintiffaid.vercel.app/verification/${token}`; // Construct the login link
+      res.send({ loginLink }); // Send the login link in the response
       return;
     } else {
       res.status(400).json({ message: "Verification failed" });
