@@ -36,7 +36,7 @@ export const createUser = async (
   try {
     const hashedPassword = hashSync(password, 10);
     const jwtSecret = process.env.JWT_SECRET || "pgiir7dkuciylf"; // Providing a default value if JWT_SECRET is undefined
-    const token = sign({ FirmName }, jwtSecret, { expiresIn: "1h" });
+    const token = sign({ FirmName, email }, jwtSecret, { expiresIn: "1h" });
 
     const newUser = await prisma.user.create({
       data: {
