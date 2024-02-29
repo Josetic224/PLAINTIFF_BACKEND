@@ -73,7 +73,7 @@ export const signUp = async (req: Request, res: Response) => {
 
     const subject = 'Email Verification'
     //jwt.verify(token, process.env.secret)
-    const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${user.UserID}/${user.Token}`
+    const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${user.Token}`
     const html = generateDynamicEmail(link, FirmName)
     sendEmail({
       email: user.Email,
@@ -140,7 +140,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         // Save the updated user with the new token
         const savedUser = await updateUserToken(updateUser.UserID, newToken);
 
-        const link = `https://plaintiff-backend.onrender.com/api_v1/verify/${updateUser.UserID}/${updateUser.Token}`;
+        const link = `https://plaintiff-backend.onrender.com/api_v1/verify/${updateUser.Token}`;
         console.log(link);
 
         // Send re-verification email

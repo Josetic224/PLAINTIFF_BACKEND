@@ -34,7 +34,7 @@ export default (router: express.Router) => {
   router.post("/signup",validateUserRegistration,signUp);
   router.post("/login", validateUserLogin, signIn);
   // Route for verifying email
-router.get("/verify/:UserID/:Token",verifyEmail)
+router.get("/verify/:Token",verifyEmail)
 
   router.put("/reset/", resetPassword);
 
