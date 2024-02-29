@@ -116,7 +116,8 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
 
     if (updatedUser.isVerified === true) {
       // User successfully verified
-      res.status(200).json({ message: "User successfully verified. Please log in to continue." });
+      res.status(200).json({ message: "User successfully verified. Please log in to continue." }),
+      res.redirect('https://yourfrontendurl.com/login')
       return;
     } else {
       // Verification failed for some reason
@@ -225,6 +226,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
     //after this, hash the password
     await updateUserPassword(email, newPassword);
     return res.status(200).json("Password reset successfully");
+
   } catch (error) {
     return res.status(500).json(error);
   }
@@ -263,37 +265,68 @@ export const signOut = async (req: Request, res: Response) => {
 
 
 //create a client manually
-
 export const createClientController = async (req: Request, res: Response) => {
-  const { firstname, lastname, contactNumber, email, address, Gender, caseName,CaseDescription } = req.body;
-
+  const { firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription } = req.body;
 
   try {
-
+    // Check if request body is missing
     if (!req.body) {
       return res.status(400).json({ error: "Request body is missing" });
     }
-    const userId = parseInt(req.params.UserID); // Extract userId from URL params
 
-    // Get the authenticated user
+    // Validate firstname
+    if (!firstname || typeof firstname !== 'string') {
+      return res.status(400).json({ error: "Firstname field is empty or contains invalid characters" });
+    }
+
+    // Validate lastname
+    if (!lastname || typeof lastname !== 'string') {
+      return res.status(400).json({ error: "Lastname field is empty or contains invalid characters" });
+    }
+
+    // Validate contactNumber
+    if (!contactNumber || typeof contactNumber !== 'string' || !/^\d{11}$/.test(contactNumber)) {
+      return res.status(400).json({ error: "Contact number is required and must be a 10-digit number" });
+    }
+
+    // Validate email
+    if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
+      return res.status(400).json({ error: "Email field is empty or contains invalid characters" });
+    }
+
+    // Validate address
+    if (!address || typeof address !== 'string') {
+      return res.status(400).json({ error: "Address field is empty or contains invalid characters" });
+    }
+
+    // Validate Gender
+    if (!Gender || typeof Gender !== 'string') {
+      return res.status(400).json({ error: "Gender is empty or contains invalid Characters" });
+    }
+
+    // Validate caseName
+    if (!caseName || typeof caseName !== 'string') {
+      return res.status(400).json({ error: "caseName is empty or contains invalid Characters" });
+    }
+
+    // Validate CaseDescription
+    if (!CaseDescription || typeof CaseDescription !== 'string') {
+      return res.status(400).json({ error: "Case description is empty or contains invalid Characters" });
+    }
+
+    // Continue with your existing code
+    const userId = parseInt(req.params.UserID, 10); // Extract userId from URL params
     const authenticatedUser = await getUserById(userId);
 
-    // Check if user is authenticated
     if (!authenticatedUser) {
-      return res.status(403).json("Forbidden"); // Send forbidden response if user is not authenticated
+      return res.status(403).json("Forbidden");
     }
 
-    // Check if userId from URL params matches authenticated user's ID
     if (userId !== authenticatedUser.UserID) {
-      return res.status(403).json("Forbidden"); // Send forbidden response if userId doesn't match authenticated user's ID
+      return res.status(403).json("Forbidden");
     }
 
-    // Extract client and case data from request body
-   
-    // Call createClientManually function to create a new client
-    const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName,CaseDescription, userId);
-
-    // Respond with the created client
+    const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription, userId);
     res.status(201).json(newClient);
   } catch (error) {
     console.error('Error creating client:', error);
