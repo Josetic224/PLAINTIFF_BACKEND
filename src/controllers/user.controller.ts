@@ -49,6 +49,15 @@ export const getAllUsersController = async (req: Request, res: Response) => {
   }
 };
 
+function generateOTP(length: number): string {
+  const digits = '0123456789';
+  let OTP = '';
+  for (let i = 0; i < length; i++) {
+    OTP += digits[Math.floor(Math.random() * 10)];
+  }
+  return OTP;
+}
+
 export const signUp = async (req: Request, res: Response) => {
   const { email, password, confirmPassword, PhoneNumber, FirmName } = req.body;
 
@@ -65,6 +74,7 @@ export const signUp = async (req: Request, res: Response) => {
     if (password !== confirmPassword) {
       return res.status(401).json("both passwords do not match")
     }
+ 
     //sign the user
     // Create the user
     user = await createUser(FirmName, password, email, PhoneNumber);
@@ -73,7 +83,7 @@ export const signUp = async (req: Request, res: Response) => {
 
     const subject = 'Email Verification'
     //jwt.verify(token, process.env.secret)
-    const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${user.Token}`
+    const link = `https://plaintiffaid.vercel.app/verification/${user.Token}`
     const html = generateDynamicEmail(link, FirmName)
     sendEmail({
       email: user.Email,
@@ -156,7 +166,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         const updatedUser = await updateUserToken(user.UserID, Token);
 
         // Send re-verification email
-        const link = `${req.protocol}://${req.get('host')}/api_v1/verify/${Token}`;
+        const link = `https://plaintiffaid.vercel.app/verification/${Token}`;
         sendEmail({
           email: user.Email,
           html: generateDynamicEmail(link, user.Username),
