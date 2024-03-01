@@ -201,11 +201,10 @@ export const signIn = async (req: Request, res: Response) => {
     if (!existingUser) {
       throw new Error(`User ${email} does not exist`);
     }
-
-    if (!compareSync(password, existingUser.Password)) {
-      throw new Error(`Incorrect Password ${password}`);
-    }
-
+const checkPassword = await comparePassword(password, existingUser.Password)
+if(!checkPassword){
+  return res.status(400).json("Incorrect password")
+}
     // Create a token for the logged-in user
     const token = await createNewToken({ email: existingUser.Email, id: existingUser.UserID });
 
