@@ -469,7 +469,7 @@ export const Allclients = async (req: Request, res: Response) => {
     if (!user) {
       res.status(403).json("forbidden")
     }
-    const getClients = await getAllClients()
+    const getClients = await getAllClients(userId)
     if (!getClients) {
       return res.status(401).json({
         status: false,
@@ -497,7 +497,7 @@ export const clientByFirstname = async (req: Request, res: Response) => {
       return res.status(403).json("Forbidden"); // Send response and exit the function
     }
     const { firstname } = req.body;
-    const findClient = await getClientByFirstname(firstname);
+    const findClient = await getClientByFirstname(firstname, userId);
     if (findClient === undefined || findClient === null) {
       return res.status(401).json({
         status: false,

@@ -179,13 +179,19 @@ export const destroyToken = async (id: number) => {
 
 
 // for client
-export const getAllClients = ()=>prisma.client.findMany()
+
+export const getAllClients = (userId: number) => prisma.client.findMany({
+  where: {
+    userId: userId,
+  },
+});
 
 //get client by Firstname
-export const getClientByFirstname = async (firstname: string) => {
+export const getClientByFirstname = async (firstname: string, userId:number) => {
   try {
     const client = await prisma.client.findFirst({
       where: {
+        userId:userId,
         FirstName: firstname // Specify the field and its value directly
       }
     });
