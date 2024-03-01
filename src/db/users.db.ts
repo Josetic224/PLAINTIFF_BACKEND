@@ -56,13 +56,17 @@ export const createUser = async (
   }
 };
 
-
-export const comparePassword = async (password: string, user: object) => {
-  if (!compareSync(password, "jsdhjdjh")) {
-    return false;
-    // throw Error(`Incorrect Password ${password}`);
+export const comparePassword = async (password: string, hashedPassword: string) => {
+  try {
+    if (!compareSync(password, hashedPassword)) {
+      // If passwords don't match, return false
+      return false;
+    }
+    // If passwords match, return true
+    return true;
+  } catch (error:any) {
+    throw new Error("Password is Incorrect!");
   }
-  return true;
 };
 
 
