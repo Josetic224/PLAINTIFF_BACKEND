@@ -386,13 +386,47 @@ export const createClientController = async (req: Request, res: Response) => {
 
 
 
+// export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const userId: number = parseInt(req.params.UserID, 10);
+//     const User = await getUserById(userId);
+//     if (!User) {
+//       res.status(403).json("Forbidden");
+//       return;
+//     }
+
+//     // Create Excel workbook
+//     const workbook = new exceljs.Workbook();
+//     const worksheet = workbook.addWorksheet('Clients');
+
+//     // Add headers to the worksheet
+//     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
+
+//     // Generate the Excel file in memory
+//     const excelBuffer = await workbook.xlsx.writeBuffer();
+
+//     // Create a Blob from the binary data
+//     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+//     // Generate a Blob URL
+//     const blobUrl = URL.createObjectURL(blob);
+
+//     // Send the Blob URL as response
+//     res.status(200).json({ blobUrl });
+//   } catch (error) {
+//     console.error('Error downloading template:', error);
+//     res.status(500).send('Internal server error');
+//   }
+// };
+
+
 export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId: number = parseInt(req.params.UserID, 10);
-    const User = await getUserById(userId);
-    if (!User) {
-      res.status(403).json("Forbidden");
-      return;
+    const user = await getUserById(userId);
+    if (!user) {
+     res.status(403).json("Forbidden");
+     return;
     }
 
     // Create Excel workbook
@@ -405,20 +439,17 @@ export const downloadTemplateController = async (req: Request, res: Response): P
     // Generate the Excel file in memory
     const excelBuffer = await workbook.xlsx.writeBuffer();
 
-    // Create a Blob from the binary data
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Plaintiff_Aid.xlsx"');
 
-    // Generate a Blob URL
-    const blobUrl = URL.createObjectURL(blob);
-
-    // Send the Blob URL as response
-    res.status(200).json({ blobUrl });
+    // Send the file content as response
+    res.status(200).send(excelBuffer);
   } catch (error) {
     console.error('Error downloading template:', error);
     res.status(500).send('Internal server error');
   }
 };
-
 
 
 
