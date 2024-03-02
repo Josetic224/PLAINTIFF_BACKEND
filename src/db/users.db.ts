@@ -190,6 +190,22 @@ export const getAllClients = (userId: number) => prisma.client.findMany({
   },
 });
 
+export const getAClient = async (userId: number, clientId: number, caseId:number) => {
+  try {
+    const client = await prisma.client.findFirst({
+      where: {
+        userId: userId,
+        ClientID: clientId,
+        CaseID:caseId
+      }
+    });
+    return client !== null; // Return true if client exists, false otherwise
+  } catch (error) {
+    console.error("Error fetching client:", error);
+    throw new Error("Failed to fetch client.");
+  }
+};
+
 //get client by Firstname
 export const getClientByFirstname = async (firstname: string, userId:number) => {
   try {
@@ -220,12 +236,12 @@ export const getClientByLastname = async(lastname:string)=>{
 
 export const getClientByCaseId = async(caseId:number)=>{
   try {
-    
+      const client = await prisma.case.findFirst({where:{CaseID:caseId}})
+  return client;
   } catch (error) {
     throw new Error(`Error finding Client by CaseId`)
   }
-  const client = await prisma.case.findFirst({where:{CaseID:caseId}})
-  return client;
+
 }
 
 
@@ -288,4 +304,6 @@ return newClient
     throw new Error(error)
   }
 }
+
+
 

@@ -1,5 +1,4 @@
 import express, { NextFunction, Request, Response } from "express";
-
 import { Case, Client, PrismaClient, User } from '@prisma/client';
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
@@ -27,7 +26,7 @@ import {
   getClientByLastname,
   getClientByCaseId,
   getClientByFirstname,
-
+  getAClient
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -35,6 +34,8 @@ import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
 import { generateDynamicEmail } from "../middleware/html";
+import { empty } from "@prisma/client/runtime/library";
+import { buffer } from "node:stream/consumers";
 
 
 
@@ -49,14 +50,6 @@ export const getAllUsersController = async (req: Request, res: Response) => {
   }
 };
 
-function generateOTP(length: number): string {
-  const digits = '0123456789';
-  let OTP = '';
-  for (let i = 0; i < length; i++) {
-    OTP += digits[Math.floor(Math.random() * 10)];
-  }
-  return OTP;
-}
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password, confirmPassword, PhoneNumber, FirmName } = req.body;
@@ -233,26 +226,24 @@ if(!checkPassword){
 
 
 
-export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { email, newPassword } = req.body;
-    const user = await getUserByEmail(email)
-   if(!user){
-    return res.status(401).json("email not found")
-   }
-    if (!newPassword) {
-      return res.status(400).json("Password Field is empty");
-    }
+// export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const { email} = req.body;
+//     const user = await getUserByEmail(email)
+//    if(!user){
+//     return res.status(401).json("email not found")
+//    }
+   
 
    
-    //after this, hash the password
-    await updateUserPassword(email, newPassword);
-    return res.status(200).json("Password reset successfully");
+//     //after this, hash the password
+//     await updateUserPassword(email, newPassword);
+//     return res.status(200).json("Password reset successfully");
 
-  } catch (error) {
-    return res.status(500).json(error);
-  }
-}
+//   } catch (error) {
+//     return res.status(500).json(error);
+//   }
+// }
 
 //function to sign out the user... 
 export const signOut = async (req: Request, res: Response) => {
@@ -359,15 +350,50 @@ export const createClientController = async (req: Request, res: Response) => {
 
 
 
-export const downloadTemplateController = async (req: Request, res: Response) => {
+// export const downloadTemplateController = async (req: Request, res: Response) => {
 
+//   try {
+//     const userId = parseInt(req.params.UserID, 10);
+//     const User = await getUserById(userId);
+//     if (!User) {
+//       return res.status(403).json("Forbidden");
+//     }
+
+
+//     // Create Excel workbook
+//     const workbook = new exceljs.Workbook();
+//     const worksheet = workbook.addWorksheet('Clients');
+
+//     // Add headers to the worksheet
+//     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
+
+//     // Send the Excel file as a response
+//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+//     res.setHeader('Content-Disposition', 'attachment; filename="Plaintiff_Aid.xlsx"');
+//     workbook.xlsx.write(res)
+//       .then(() => {
+//         res.status(200).end();
+//       });
+//   } catch (error) {
+//     console.error('Error downloading template:', error);
+//     res.status(500).send('Internal server error');
+//   }
+// };
+
+
+
+
+
+
+
+export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = parseInt(req.params.UserID, 10);
+    const userId: number = parseInt(req.params.UserID, 10);
     const User = await getUserById(userId);
     if (!User) {
-      return res.status(403).json("Forbidden");
+      res.status(403).json("Forbidden");
+      return;
     }
-
 
     // Create Excel workbook
     const workbook = new exceljs.Workbook();
@@ -376,13 +402,17 @@ export const downloadTemplateController = async (req: Request, res: Response) =>
     // Add headers to the worksheet
     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
 
-    // Send the Excel file as a response
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="Plaintiff_Aid.xlsx"');
-    workbook.xlsx.write(res)
-      .then(() => {
-        res.status(200).end();
-      });
+    // Generate the Excel file in memory
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+
+    // Create a Blob from the binary data
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    // Generate a Blob URL
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Send the Blob URL as response
+    res.status(200).json({ blobUrl });
   } catch (error) {
     console.error('Error downloading template:', error);
     res.status(500).send('Internal server error');
@@ -566,3 +596,89 @@ export const clientByCaseId = async (req: Request, res: Response) => {
     })
   }
 }
+
+
+export const updateClient = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const { firstname, lastname, contactNumber, email, address, gender, caseName, caseDescription } = req.body;
+
+  try {
+    // Check if the client exists
+    const client = await prisma.client.findFirst({
+      where: {
+        ClientID: clientId,
+        userId: userId, // Make sure userId is properly passed here
+      },
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    // Update client information
+    const updatedClient = await prisma.client.update({
+      where: {
+        ClientID: clientId,
+      },
+      data: {
+        FirstName: firstname,
+        LastName: lastname,
+        ContactNumber: contactNumber,
+        Email: email,
+        Address: address,
+        Gender: gender,
+        Case: {
+          update: {
+            CaseName: caseName,
+            CaseDescription: caseDescription,
+          },
+        },
+      },
+      include: {
+        Case: true,
+      },
+    });
+
+    return res.status(200).json(updatedClient);
+  } catch (error:any) {
+    return res.status(500).json({ status: 'Failed to update client', message: error.message });
+  }
+};
+
+
+
+
+export const Totalclients = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId: number = parseInt(req.params.UserID, 10);
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(403).json("Forbidden");
+      return;
+    }
+
+    const getClients = await getAllClients(userId);
+    if (!getClients || getClients.length === 0) {
+       res.status(404).json({
+        status: false,
+        message: "No clients found"
+      });
+      return;
+    }
+
+    // Calculate total number of clients
+    const totalClients: number = getClients.length;
+
+    res.status(200).json({
+      status: true,
+      totalClients: totalClients
+    });
+  } catch (error: any) {
+    console.error('Error fetching clients:', error);
+    res.status(500).json({
+      status: false,
+      message: error.message
+    });
+  }
+};

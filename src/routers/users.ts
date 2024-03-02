@@ -10,7 +10,7 @@ import {
   getAllUsersController,
   signUp,
   signIn,
-  resetPassword,
+  // resetPassword,
   verifyEmail,
   signOut,
   downloadTemplateController,
@@ -19,6 +19,8 @@ import {
   Allclients,
   clientByFirstname,
   clientByLastname,
+  updateClient,
+  Totalclients,
   // senAppointmentReminders,
 
 } from "../controllers/user.controller";
@@ -36,7 +38,7 @@ export default (router: express.Router) => {
   // Route for verifying email
 router.get("/verify/:Token",verifyEmail)
 
-  router.put("/reset/", resetPassword);
+  // router.put("/reset/", resetPassword);
 
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)
@@ -45,5 +47,6 @@ router.get("/verify/:Token",verifyEmail)
   router.get("/getClients/:UserID",Allclients)
   router.get("/getClients/firstname/:UserID", clientByFirstname)
   router.get("/getClients/lastname/:UserID", clientByLastname)
-  
+  router.put("/update_client/:UserID/:clientId", updateClient);
+  router.get("/total_clients/:UserID", Totalclients)
   };
