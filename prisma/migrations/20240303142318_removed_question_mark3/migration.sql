@@ -58,6 +58,19 @@ CREATE TABLE "document" (
     CONSTRAINT "document_pkey" PRIMARY KEY ("DocumentID")
 );
 
+-- CreateTable
+CREATE TABLE "Schedule" (
+    "id" SERIAL NOT NULL,
+    "clientName" TEXT NOT NULL,
+    "clientEmail" TEXT NOT NULL,
+    "dateOfAppointment" TIMESTAMP(3) NOT NULL,
+    "timeOfAppointment" TEXT NOT NULL,
+    "scheduleDetails" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
+
+    CONSTRAINT "Schedule_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_Email_key" ON "users"("Email");
 
@@ -68,7 +81,10 @@ CREATE UNIQUE INDEX "users_UserID_key" ON "users"("UserID");
 CREATE UNIQUE INDEX "roles_RoleID_key" ON "roles"("RoleID");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "clients_ClientID_key" ON "clients"("ClientID");
+CREATE UNIQUE INDEX "clients_Email_key" ON "clients"("Email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "clients_FirstName_Email_key" ON "clients"("FirstName", "Email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "cases_CaseID_key" ON "cases"("CaseID");
@@ -90,3 +106,9 @@ ALTER TABLE "cases" ADD CONSTRAINT "cases_AssignedUserID_fkey" FOREIGN KEY ("Ass
 
 -- AddForeignKey
 ALTER TABLE "document" ADD CONSTRAINT "document_ClientID_fkey" FOREIGN KEY ("ClientID") REFERENCES "clients"("ClientID") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Schedule" ADD CONSTRAINT "Schedule_clientName_clientEmail_fkey" FOREIGN KEY ("clientName", "clientEmail") REFERENCES "clients"("FirstName", "Email") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Schedule" ADD CONSTRAINT "Schedule_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("UserID") ON DELETE RESTRICT ON UPDATE CASCADE;

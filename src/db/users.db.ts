@@ -307,3 +307,39 @@ return newClient
 
 
 
+export const createSchedule = async(req:Request, Res:Response)=>{
+  try {
+    const createdSchedule = await prisma
+  } catch (error:any) {
+    throw new Error(error.message)
+  }
+  
+}
+
+
+//Function to check if client exists by name or email
+export const checkClientExists = async (clientName: string, clientEmail: string): Promise<void> => {
+  try {
+    // Check if client exists by name
+    const clientByName = await prisma.client.findFirst({
+      where: {
+        FirstName: clientName
+      }
+    });
+
+    // Check if client exists by email
+    const clientByEmail = await prisma.client.findFirst({
+      where: {
+        Email: clientEmail
+      }
+    });
+
+    // If client does not exist by name or email, throw an error
+    if (!clientByName && !clientByEmail) {
+      throw new Error('Client not found');
+    }
+  } catch (error) {
+    throw error; // Re-throw the error to be handled by the caller
+  }
+};
+
