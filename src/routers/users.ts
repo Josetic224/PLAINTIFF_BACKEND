@@ -21,6 +21,8 @@ import {
   clientByLastname,
   updateClient,
   Totalclients,
+  createScheduleAndSendEmail,
+  // deleteUser,
   // senAppointmentReminders,
 
 } from "../controllers/user.controller";
@@ -49,4 +51,6 @@ router.get("/verify/:Token",verifyEmail)
   router.get("/getClients/lastname/:UserID", clientByLastname)
   router.put("/update_client/:UserID/:clientId", updateClient);
   router.get("/total_clients/:UserID", Totalclients)
+  router.post("/create-schedule/:UserID", createScheduleAndSendEmail)
+ 
   };

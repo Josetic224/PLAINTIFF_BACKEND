@@ -24,10 +24,14 @@ model User {
   Role       Role[]
   Clients    Client[]
   Cases     Case[]
-
+  
+  // Add relation to Schedule model
+  schedules  Schedule[] @relation("UserSchedules")
+  
   @@unique([UserID])
   @@map("users")
 }
+
 
 // Role model
 model Role {
@@ -42,23 +46,26 @@ model Role {
 
 // Client model
 model Client {
-  ClientID        Int        @id @default(autoincrement())
-  FirstName       String
-  LastName        String
-  ContactNumber   String
-  Email           String
-  Address         String
-  Gender          String
-  Case            Case?      @relation(fields: [CaseID], references: [CaseID])
-  CaseID          Int?
-  User            User       @relation( fields: [userId], references: [UserID])
-  userId  Int
-  Documents       Document[]
-
-
-  @@unique([ClientID])
+  ClientID       Int      @id @default(autoincrement())
+  FirstName      String
+  LastName       String
+  ContactNumber  String
+  Email          String   @unique
+  Address        String
+  Gender         String
+  Case           Case?    @relation(fields: [CaseID], references: [CaseID])
+  CaseID         Int?
+  User           User     @relation(fields: [userId], references: [UserID])
+  userId         Int
+  Documents      Document[]
+  
+  // Add opposite relation field for Schedule
+  schedules      Schedule[] @relation("ClientSchedule")
+  
+  @@unique([FirstName, Email])
   @@map("clients")
 }
+
 
 // Case model
 model Case {
@@ -85,6 +92,20 @@ model Document {
 
   @@unique([DocumentID])
   @@map("document")
+}
+
+
+// Schedule model
+model Schedule {
+  id                Int       @id @default(autoincrement())
+  clientName        String
+  clientEmail       String
+  dateOfAppointment DateTime
+  timeOfAppointment String
+  scheduleDetails String
+  client            Client   @relation("ClientSchedule", fields: [clientName, clientEmail], references: [FirstName, Email])
+  user              User?    @relation("UserSchedules", fields: [userId], references: [UserID])
+  userId            Int
 }
 
 

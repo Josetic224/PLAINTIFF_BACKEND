@@ -3,7 +3,6 @@ import { Case, Client, PrismaClient, User } from '@prisma/client';
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
 
-// Load environment variables from .env file
 dotenv.config({ path: ".env" });
 const prisma = new PrismaClient();
 import * as  exceljs from "exceljs";
@@ -26,7 +25,8 @@ import {
   getClientByLastname,
   getClientByCaseId,
   getClientByFirstname,
-  getAClient
+  getAClient,
+  checkClientExists
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -34,8 +34,8 @@ import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
 import { generateDynamicEmail } from "../middleware/html";
-import { empty } from "@prisma/client/runtime/library";
-import { buffer } from "node:stream/consumers";
+import { generateDynamicEmails } from "../Appointment";
+
 
 
 
@@ -452,8 +452,6 @@ export const downloadTemplateController = async (req: Request, res: Response): P
 };
 
 
-
-
 export const ClientBatchUpload = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.UserID, 10);
   const assignedUserId = parseInt(req.params.AssignedUserID)
@@ -711,5 +709,72 @@ export const Totalclients = async (req: Request, res: Response): Promise<void> =
       status: false,
       message: error.message
     });
+  }
+};
+
+
+
+
+
+
+export const createScheduleAndSendEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { clientName, clientEmail, dateOfAppointment, timeOfAppointment, scheduleDetails} = req.body;
+    const userId = parseInt(req.params.UserID, 10);
+  
+
+    // Fetch user by ID
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    const FirmName = user.Username
+
+    const client = await prisma.client.findUnique({
+      where: {
+        FirstName:clientName,
+        Email: clientEmail
+      }
+    });
+    
+    if (!client) {
+      // Client with the provided email doesn't exist
+      // Handle the error or take appropriate action
+      res.status(404).json({ error: 'Client not found' });
+      return;
+    }
+    
+       
+    // Reconcile dateOfAppointment from request body
+    const dateParts = dateOfAppointment.split("/");
+    const dateOfAppointmentFormatted = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`);
+    dateOfAppointmentFormatted.setHours(dateOfAppointmentFormatted.getHours() + 1);
+    // Use the retrieved ClientID to connect the client to the schedule
+    const createdSchedule = await prisma.schedule.create({
+      data: {
+        dateOfAppointment: dateOfAppointmentFormatted,
+        timeOfAppointment,
+        scheduleDetails,
+        user: { connect: { UserID: userId } },
+        client: { connect: { ClientID: client.ClientID } }
+      }
+    });
+ 
+
+    
+    const subject = `${user.Username} Appointment Notice`;
+    const html = generateDynamicEmails(clientName, FirmName, dateOfAppointment ,timeOfAppointment)
+    sendEmail({
+      email: clientEmail,
+      html,
+      subject
+    });
+
+    
+    
+    res.status(200).json({ message: 'Schedule created successfully and email sent to the user.' });
+  } catch (error:any) {
+    res.status(404).json({ error: error.message });
   }
 };
