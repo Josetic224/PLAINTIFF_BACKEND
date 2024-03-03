@@ -22,6 +22,9 @@ import {
   updateClient,
   Totalclients,
   createScheduleAndSendEmail,
+  getFirstUpcomingAppointment,
+  getNumberOfSchedules,
+  
   // deleteUser,
   // senAppointmentReminders,
 
@@ -51,6 +54,9 @@ router.get("/verify/:Token",verifyEmail)
   router.get("/getClients/lastname/:UserID", clientByLastname)
   router.put("/update_client/:UserID/:clientId", updateClient);
   router.get("/total_clients/:UserID", Totalclients)
-  router.post("/create-schedule/:UserID", createScheduleAndSendEmail)
+  router.post("/create-schedule/:UserID", createScheduleAndSendEmail),
+  router.get('/schedules/first-upcoming-appointment/:UserID',getFirstUpcomingAppointment);
+  router.get('/schedules/count/:UserID',getNumberOfSchedules)
+
  
   };
