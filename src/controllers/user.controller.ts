@@ -778,3 +778,63 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
     res.status(404).json({ error: error.message });
   }
 };
+
+//get the first upcoming schedule
+
+
+
+export const getFirstUpcomingAppointment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = parseInt(req.params.UserID, 10); // Assuming the parameter is named UserID and contains the user ID
+    const user = await getUserById(userId)
+    if(!user){
+      res.status(403).json("forbidden")
+    }
+    const now = new Date();
+    const upcomingAppointment = await prisma.schedule.findFirst({
+      where: {
+        dateOfAppointment: {
+          gte: now,
+        },
+      },
+      orderBy: {
+        dateOfAppointment: 'asc',
+      },
+    });
+    if (upcomingAppointment) {
+      res.status(200).json({ upcomingAppointment });
+    } else {
+      res.status(404).json({ message: 'No upcoming appointment found' });
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+
+
+export const getNumberOfSchedules = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = parseInt(req.params.UserID, 10);
+
+    // Fetch user by ID
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    // Count the number of schedules associated with the user
+    const scheduleCount = await prisma.schedule.count({
+      where: {
+        userId: userId,
+      },
+    });
+
+    res.status(200).json({ scheduleCount });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
