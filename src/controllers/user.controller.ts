@@ -34,6 +34,7 @@ import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
 import { generateDynamicEmail } from "../middleware/html";
+import { generateEmailTemplate } from "../Appointment";
 
 
 
@@ -423,8 +424,8 @@ export const downloadTemplateController = async (req: Request, res: Response): P
     const userId: number = parseInt(req.params.UserID, 10);
     const user = await getUserById(userId);
     if (!user) {
-     res.status(403).json("Forbidden");
-     return;
+      res.status(403).json("Forbidden");
+      return;
     }
 
     // Create Excel workbook
@@ -433,6 +434,18 @@ export const downloadTemplateController = async (req: Request, res: Response): P
 
     // Add headers to the worksheet
     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
+
+    // Enforce enum for gender
+    const validGenders = ['Male', 'Female'];
+    const genderColumn = worksheet.getColumn('Gender');
+    genderColumn.eachCell((cell) => {
+      const cellValue = String(cell.value).trim(); // Cast to string and trim any whitespace
+      if (validGenders.includes(cellValue)) {
+        cell.value = cellValue; // Keep the value as it is if it's a valid gender
+      } else {
+        cell.value = ''; // Set empty string if the value is not valid
+      }
+    });
 
     // Generate the Excel file in memory
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -452,7 +465,7 @@ export const downloadTemplateController = async (req: Request, res: Response): P
 
 export const ClientBatchUpload = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.UserID, 10);
-  const assignedUserId = parseInt(req.params.AssignedUserID)
+  const assignedUserId = parseInt(req.params.AssignedUserID, 10); // Parse assignedUserId as well
 
   try {
     // Check if user is authenticated
@@ -480,6 +493,9 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
     // Initialize row array
     const clientsData: any[] = [];
 
+    // Enum for gender
+    const validGenders = ['Male', 'Female'];
+
     // Iterate through each row in the worksheet and push to clientsData
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber > 1) { // Skip header row
@@ -487,26 +503,32 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
       }
     });
 
-    // Save data to database
-    await Promise.all(clientsData.map(async (row: any[]) => {
-      const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
+   // Save data to database
+   await Promise.all(clientsData.map(async (row: any[]) => {
+    const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
 
-      // Extracting email from the object
-      const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
+    // Extracting email from the object
+    const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
 
-      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, CaseDescription, assignedUserId);
-    }));
+    // Ensure all fields are valid
+    const genderString = String(Gender).trim();
+    if (!validGenders.includes(genderString)) {
+      throw new Error(`Invalid gender value "${genderString}" in row ${row}`);
+    }
+    
+    // Ensure other fields are not empty
+    if (!FirstName || !LastName || !ContactNumber || !Email || !Address || !CaseName || !CaseDescription) {
+      throw new Error(`One or more fields are missing in row ${row}`);
+    }
 
+    await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
+  }));
     res.status(200).json({ message: 'Data uploaded successfully' });
   } catch (error) {
     console.error('Error uploading file:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-
-
-
 
 
 
@@ -628,6 +650,7 @@ export const clientByCaseId = async (req: Request, res: Response) => {
 export const updateClient = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.userId, 10);
   const clientId = parseInt(req.params.clientId, 10);
+  const caseId = parseInt(req.params.caseId, 10)
   const { firstname, lastname, contactNumber, email, address, gender, caseName, caseDescription } = req.body;
 
   try {
@@ -635,7 +658,8 @@ export const updateClient = async (req: Request, res: Response) => {
     const client = await prisma.client.findFirst({
       where: {
         ClientID: clientId,
-        userId: userId, // Make sure userId is properly passed here
+        userId: userId,
+        CaseID:caseId // Make sure userId is properly passed here
       },
     });
 
@@ -728,6 +752,7 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
       return;
     }
     const FirmName = user.Username
+    const ContactNumber = user.PhoneNumber
 
     const client = await prisma.client.findUnique({
       where: {
@@ -762,7 +787,7 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
 
     
     const subject = `${user.Username} Appointment Notice`;
-    const html = generateDynamicEmails(clientName, FirmName, dateOfAppointment ,timeOfAppointment)
+    const html = generateEmailTemplate(clientName,FirmName,  dateOfAppointment, timeOfAppointment, ContactNumber)
     sendEmail({
       email: clientEmail,
       html,

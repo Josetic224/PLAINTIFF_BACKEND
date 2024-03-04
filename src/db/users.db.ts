@@ -275,6 +275,45 @@ return newClient
 }
 
 
+
+export const updateClientManually = async (clientId: number, firstname: string, lastname: string, contactNumber: string, email: string, address: string, Gender: string, caseId:number, CaseName: string, CaseDescription: string, assignedUserId: number) => {
+  try {
+    const updatedClient = await prisma.client.update({
+      where: { ClientID: clientId },
+      data: {
+        FirstName: firstname,
+        LastName: lastname,
+        ContactNumber: contactNumber,
+        Email: email,
+        Address: address,
+        Gender: Gender,
+        Case: {
+          upsert: {
+            where: {CaseID:caseId}, // Upsert the case associated with the client
+            create: {
+              CaseName: CaseName,
+              CaseDescription: CaseDescription,
+              AssignedUserID: assignedUserId
+            },
+            update: {
+              CaseName: CaseName,
+              CaseDescription: CaseDescription,
+              AssignedUserID: assignedUserId
+            }
+          }
+        }
+      },
+      include: {
+        Case: true
+      }
+    });
+    return updatedClient;
+  } catch (error:any) {
+    throw new Error(error);
+  }
+};
+
+
 export const createClientBatchUpload = async(userId:number, FirstName:string,LastName:string,ContactNumber:string,Email:string,Address:string,Gender:string,CaseName:string, CaseDescription:string, assignedUserId:number)=>{
   try {
     const newClient = await prisma.client.create({
