@@ -46,16 +46,16 @@ model Role {
 
 // Client model
 model Client {
-  ClientID       Int      @id @default(autoincrement())
+  ClientID       Int        @id @default(autoincrement())
   FirstName      String
   LastName       String
   ContactNumber  String
-  Email          String   @unique
+  Email          String     @unique
   Address        String
-  Gender         String
-  Case           Case?    @relation(fields: [CaseID], references: [CaseID])
+  Gender         Gender     // Enumerated type for gender
+  Case           Case?      @relation(fields: [CaseID], references: [CaseID])
   CaseID         Int?
-  User           User     @relation(fields: [userId], references: [UserID])
+  User           User       @relation(fields: [userId], references: [UserID])
   userId         Int
   Documents      Document[]
   
@@ -64,6 +64,11 @@ model Client {
   
   @@unique([FirstName, Email])
   @@map("clients")
+}
+
+enum Gender {
+  Male
+  Female
 }
 
 

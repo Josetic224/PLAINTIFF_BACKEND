@@ -423,8 +423,8 @@ export const downloadTemplateController = async (req: Request, res: Response): P
     const userId: number = parseInt(req.params.UserID, 10);
     const user = await getUserById(userId);
     if (!user) {
-     res.status(403).json("Forbidden");
-     return;
+      res.status(403).json("Forbidden");
+      return;
     }
 
     // Create Excel workbook
@@ -433,6 +433,18 @@ export const downloadTemplateController = async (req: Request, res: Response): P
 
     // Add headers to the worksheet
     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
+
+    // Enforce enum for gender
+    const validGenders = ['Male', 'Female'];
+    const genderColumn = worksheet.getColumn('Gender');
+    genderColumn.eachCell((cell) => {
+      const cellValue = String(cell.value).trim(); // Cast to string and trim any whitespace
+      if (validGenders.includes(cellValue)) {
+        cell.value = cellValue; // Keep the value as it is if it's a valid gender
+      } else {
+        cell.value = ''; // Set empty string if the value is not valid
+      }
+    });
 
     // Generate the Excel file in memory
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -448,7 +460,6 @@ export const downloadTemplateController = async (req: Request, res: Response): P
     res.status(500).send('Internal server error');
   }
 };
-
 
 export const ClientBatchUpload = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.UserID, 10);
