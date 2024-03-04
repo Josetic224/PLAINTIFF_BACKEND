@@ -461,9 +461,10 @@ export const downloadTemplateController = async (req: Request, res: Response): P
   }
 };
 
+
 export const ClientBatchUpload = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.UserID, 10);
-  const assignedUserId = parseInt(req.params.AssignedUserID)
+  const assignedUserId = parseInt(req.params.AssignedUserID, 10); // Parse assignedUserId as well
 
   try {
     // Check if user is authenticated
@@ -491,6 +492,9 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
     // Initialize row array
     const clientsData: any[] = [];
 
+    // Enum for gender
+    const validGenders = ['Male', 'Female'];
+
     // Iterate through each row in the worksheet and push to clientsData
     worksheet.eachRow((row, rowNumber) => {
       if (rowNumber > 1) { // Skip header row
@@ -498,26 +502,32 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
       }
     });
 
-    // Save data to database
-    await Promise.all(clientsData.map(async (row: any[]) => {
-      const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
+   // Save data to database
+   await Promise.all(clientsData.map(async (row: any[]) => {
+    const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
 
-      // Extracting email from the object
-      const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
+    // Extracting email from the object
+    const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
 
-      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, Gender, CaseName, CaseDescription, assignedUserId);
-    }));
+    // Ensure all fields are valid
+    const genderString = String(Gender).trim();
+    if (!validGenders.includes(genderString)) {
+      throw new Error(`Invalid gender value "${genderString}" in row ${row}`);
+    }
+    
+    // Ensure other fields are not empty
+    if (!FirstName || !LastName || !ContactNumber || !Email || !Address || !CaseName || !CaseDescription) {
+      throw new Error(`One or more fields are missing in row ${row}`);
+    }
 
+    await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
+  }));
     res.status(200).json({ message: 'Data uploaded successfully' });
   } catch (error) {
     console.error('Error uploading file:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-
-
-
 
 
 
