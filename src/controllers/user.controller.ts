@@ -34,6 +34,7 @@ import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
 import { generateDynamicEmail } from "../middleware/html";
+import { generateEmailTemplate } from "../Appointment";
 
 
 
@@ -649,6 +650,7 @@ export const clientByCaseId = async (req: Request, res: Response) => {
 export const updateClient = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.userId, 10);
   const clientId = parseInt(req.params.clientId, 10);
+  const caseId = parseInt(req.params.caseId, 10)
   const { firstname, lastname, contactNumber, email, address, gender, caseName, caseDescription } = req.body;
 
   try {
@@ -656,7 +658,8 @@ export const updateClient = async (req: Request, res: Response) => {
     const client = await prisma.client.findFirst({
       where: {
         ClientID: clientId,
-        userId: userId, // Make sure userId is properly passed here
+        userId: userId,
+        CaseID:caseId // Make sure userId is properly passed here
       },
     });
 
@@ -749,6 +752,7 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
       return;
     }
     const FirmName = user.Username
+    const ContactNumber = user.PhoneNumber
 
     const client = await prisma.client.findUnique({
       where: {
@@ -783,7 +787,7 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
 
     
     const subject = `${user.Username} Appointment Notice`;
-    const html = generateDynamicEmails(clientName, FirmName, dateOfAppointment ,timeOfAppointment)
+    const html = generateEmailTemplate(clientName,FirmName,  dateOfAppointment, timeOfAppointment, ContactNumber)
     sendEmail({
       email: clientEmail,
       html,
