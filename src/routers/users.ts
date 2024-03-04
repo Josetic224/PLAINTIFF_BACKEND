@@ -58,7 +58,7 @@ router.get("/verify/:Token",verifyEmail)
   router.post("/create-schedule/:UserID", createScheduleAndSendEmail),
   router.get('/schedules/first-upcoming-appointment/:UserID',getFirstUpcomingAppointment);
   router.get('/schedules/count/:UserID',getNumberOfSchedules);
-  router.get("/schedules/all/:UserID", getAllSchedules)
+  router.get('/schedules/all_schedules/:UserID', getAllSchedules)
 
  
   };
