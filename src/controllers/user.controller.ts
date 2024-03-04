@@ -34,8 +34,6 @@ import { hashSync, compareSync } from "bcrypt";
 
 import { sendEmail } from "../middleware/nodemailer";
 import { generateDynamicEmail } from "../middleware/html";
-import { generateDynamicEmails } from "../Appointment";
-
 
 
 
@@ -843,13 +841,18 @@ export const getNumberOfSchedules = async (req: Request, res: Response): Promise
 
 export const getAllSchedules = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = parseInt(req.params.UserID,10)
-    const schedules = await prisma.schedule.findMany({
-      where:{
-        userId:userId
-      }
-    });
-    res.status(200).json(schedules);
+    const userId = parseInt(req.params.UserID, 10)
+    const user = getUserById(userId)
+    if(!user){
+      res.status(400).json("failed to fetch userId")
+    }
+    console.log(user)
+  const allSchedule = await prisma.schedule.findMany({
+    where:{
+      userId:userId
+    }
+  })
+  res.status(200).json(allSchedule)
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
