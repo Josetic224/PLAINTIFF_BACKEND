@@ -838,3 +838,20 @@ export const getNumberOfSchedules = async (req: Request, res: Response): Promise
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
+export const getAllSchedules = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = parseInt(req.params.UserID,10)
+    const schedules = await prisma.schedule.findMany({
+      where:{
+        userId:userId
+      }
+    });
+    res.status(200).json(schedules);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
