@@ -426,75 +426,6 @@ export const createClientController = async (req: Request, res: Response) => {
 
 
 
-// export const downloadTemplateController = async (req: Request, res: Response) => {
-
-//   try {
-//     const userId = parseInt(req.params.UserID, 10);
-//     const User = await getUserById(userId);
-//     if (!User) {
-//       return res.status(403).json("Forbidden");
-//     }
-
-
-//     // Create Excel workbook
-//     const workbook = new exceljs.Workbook();
-//     const worksheet = workbook.addWorksheet('Clients');
-
-//     // Add headers to the worksheet
-//     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
-
-//     // Send the Excel file as a response
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//     res.setHeader('Content-Disposition', 'attachment; filename="Plaintiff_Aid.xlsx"');
-//     workbook.xlsx.write(res)
-//       .then(() => {
-//         res.status(200).end();
-//       });
-//   } catch (error) {
-//     console.error('Error downloading template:', error);
-//     res.status(500).send('Internal server error');
-//   }
-// };
-
-
-
-
-
-
-
-// export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     const userId: number = parseInt(req.params.UserID, 10);
-//     const User = await getUserById(userId);
-//     if (!User) {
-//       res.status(403).json("Forbidden");
-//       return;
-//     }
-
-//     // Create Excel workbook
-//     const workbook = new exceljs.Workbook();
-//     const worksheet = workbook.addWorksheet('Clients');
-
-//     // Add headers to the worksheet
-//     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
-
-//     // Generate the Excel file in memory
-//     const excelBuffer = await workbook.xlsx.writeBuffer();
-
-//     // Create a Blob from the binary data
-//     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-//     // Generate a Blob URL
-//     const blobUrl = URL.createObjectURL(blob);
-
-//     // Send the Blob URL as response
-//     res.status(200).json({ blobUrl });
-//   } catch (error) {
-//     console.error('Error downloading template:', error);
-//     res.status(500).send('Internal server error');
-//   }
-// };
-
 export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId: number = parseInt(req.params.UserID, 10);
@@ -1007,5 +938,60 @@ export const deleteClient = async (req: Request, res: Response) => {
     return res.status(200).json({ message: 'Client marked as deleted successfully' });
   } catch (error:any) {
     return res.status(500).json({ status: 'Failed to delete client', message: error.message });
+  }
+};
+
+export const getDeletedClients = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10);
+
+  try {
+    // Retrieve deleted clients
+    const deletedClients = await prisma.client.findMany({
+      where: {
+        userId: userId,
+        isDeleted: true,
+      },
+    });
+
+    return res.status(200).json(deletedClients);
+  } catch (error: any) {
+    return res.status(500).json({ status: 'Failed to retrieve deleted clients', message: error.message });
+  }
+};
+
+// Function to restore a deleted client
+export const restoreClient = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10); // Extract userId from request params
+  const clientId = parseInt(req.params.clientId, 10); // Extract clientId from request params
+
+  try {
+    // Check if the client exists and belongs to the user
+    const client = await prisma.client.findFirst({
+      where: {
+        ClientID: clientId,
+        userId: userId,
+        isDeleted: true, // Make sure the client is marked as deleted
+      },
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found or already restored' });
+    }
+
+    // Update client information to mark as not deleted
+    const restoredClient = await prisma.client.update({
+      where: {
+        ClientID: clientId,
+      },
+      data: {
+        isDeleted: false, // Mark as not deleted
+      },
+    });
+
+    // Send success message and restored client as JSON response
+    return res.status(200).json({ message: 'Client restored successfully', client: restoredClient });
+  } catch (error: any) {
+    // Handle errors
+    return res.status(500).json({ status: 'Failed to restore client', message: error.message });
   }
 };

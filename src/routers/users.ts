@@ -26,6 +26,8 @@ import {
   getNumberOfSchedules,
   getAllSchedules,
   deleteClient,
+  getDeletedClients,
+  restoreClient,
   
   // deleteUser,
   // senAppointmentReminders,
@@ -60,6 +62,8 @@ router.get("/verify/:Token",verifyEmail)
   router.get('/schedules/upcoming-appointment/:UserID',getAppointmentsForNext7Days),
   router.get('/schedules/count/:UserID',getNumberOfSchedules),
   router.get('/schedules/all_schedules/:UserID', getAllSchedules)
-  router.delete("/client/delete/:UserID",deleteClient)
+  router.delete("/client/delete/:userId/:clientId/:caseId",deleteClient)
+  router.get('/client/deleted-clients/:userId', getDeletedClients);
+  router.put("/client/restore/:userId/:clientId", restoreClient)
  
   };
