@@ -71,14 +71,14 @@ export const comparePassword = async (password: string, hashedPassword: string) 
 
 
 //update password
-export const updateUserPassword = async (email:string, 
+export const updateUserPassword = async (userId:number, 
   newPassword: string,
 ) => {
   try {
     // Update the user's email and password
     const updatedUser = await prisma.user.update({
       where: { 
-      Email:email},
+      UserID:userId},
       data:
       {
         Password: hashSync(newPassword, 10),

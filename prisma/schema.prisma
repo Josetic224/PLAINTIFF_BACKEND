@@ -52,7 +52,8 @@ model Client {
   ContactNumber  String
   Email          String     @unique
   Address        String
-  Gender         Gender     // Enumerated type for gender
+  Gender         String     // Enumerated type for gender
+  isDeleted      Boolean @default(false)
   Case           Case?      @relation(fields: [CaseID], references: [CaseID])
   CaseID         Int?
   User           User       @relation(fields: [userId], references: [UserID])

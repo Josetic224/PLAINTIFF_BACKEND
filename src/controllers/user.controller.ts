@@ -35,6 +35,8 @@ import { hashSync, compareSync } from "bcrypt";
 import { sendEmail } from "../middleware/nodemailer";
 import { generateDynamicEmail } from "../middleware/html";
 import { generateEmailTemplate } from "../Appointment";
+import { JWT_SECRET } from "../config/secrets";
+import { resetEmail } from "../middleware/resetEmail";
 
 
 
@@ -222,8 +224,83 @@ if(!checkPassword){
   }
 };
 
+//write the function for forgot Password
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
 
+    // Find user by email
+    const user = await getUserByEmail(email)
 
+    // If user with the provided email doesn't exist, return error
+    if (!user) {
+      return res.status(404).json({ status: false, message: 'User not found' });
+    }
+
+    // Generate password reset token with short expiration time (e.g., 15 minutes)
+    const token = jwt.sign({ userId: user.UserID }, JWT_SECRET, { expiresIn: '15m' });
+if(jwt.TokenExpiredError){
+  res.status(401).json("Token Expired")
+}
+    // Send email with password reset link
+    const link = `https://plaintiffaid.vercel.app/#/newpassword/${token}`
+    const firmName = user.Username
+  const html = await resetEmail(firmName,link)
+  const subject = `PLAINTIFFAID RESET PASSWORD`
+  sendEmail({
+    email: user.Email,
+    html,
+    subject
+  })
+    // Respond with success message
+    res.status(200).json({ status: true, message: 'Password reset email sent' });
+  } catch (error:any) {
+    // Handle errors
+    console.error('Error in forgotPassword:', error);
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query; // Retrieve token from query parameters
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ status: false, message: 'Invalid token' });
+    }
+
+    // Check if newPassword and confirmPassword match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ status: false, message: 'Passwords do not match' });
+    }
+
+    // Verify the token
+    const decodedToken: any = jwt.verify(token, JWT_SECRET);
+
+    // Extract user ID from the token payload
+    const userId = decodedToken.userId;
+
+    // Find user by ID
+    const user = await getUserById(userId)
+
+    // If user doesn't exist or token is invalid, return error
+    if (!user) {
+      return res.status(404).json({ status: false, message: 'User not found or invalid token' });
+    }
+
+    // Update user's password (you'll need to hash the password)
+    await updateUserPassword(userId,newPassword) // Update password with the new one
+   
+
+    // Respond with success message
+    res.status(200).json({ status: true, message: 'Password reset successful' });
+  } catch (error:any) {
+    // Handle errors
+    console.error('Error in resetPassword:', error);
+    res.status(500).json({ status: false, message: error.message });
+  }
+};
 
 // export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
 //   try {
@@ -504,7 +581,7 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
     // Ensure all fields are valid
     const genderString = String(Gender).trim();
     if (!validGenders.includes(genderString)) {
-      throw new Error(`Invalid gender value "${genderString}" in row ${row}`);
+      throw new Error(`Invalid gender value, Gender value must be either male or female`);
     }
     
     // Ensure other fields are not empty
@@ -520,6 +597,7 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
     res.status(500).json({ message:error.message });
   }
 };
+
 
 
 
