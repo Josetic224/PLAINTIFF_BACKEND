@@ -15,12 +15,12 @@ export const resetEmail = (link:any, firmName:any): string => {
             </div>
 
             <!-- Company Name -->
-            <h1 style="text-align: center; color: #333;">${firmName}</h1>
+            <h1 style="text-align: center; color: #333;">PlaintiffAid</h1>
 
             <!-- Email Content -->
             <div style="background-color: #ffffff; padding: 20px; margin: 20px auto; max-width: 600px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
                 <h2>Password Reset</h2>
-                <p>Hello [User],</p>
+                <p>Hello ${firmName},</p>
                 <p>You recently requested to reset your password for your ${firmName} account. Click the button below to reset your password:</p>
                 <!-- Reset Button -->
                 <div style="text-align: center;">

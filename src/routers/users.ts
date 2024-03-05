@@ -28,6 +28,8 @@ import {
   deleteClient,
   getDeletedClients,
   restoreClient,
+  resetPassword,
+  forgotPassword,
   
   // deleteUser,
   // senAppointmentReminders,
@@ -46,8 +48,9 @@ export default (router: express.Router) => {
   router.post("/login", validateUserLogin, signIn);
   // Route for verifying email
 router.get("/verify/:Token",verifyEmail)
+router.post('/forgot-password', forgotPassword);
+router.put("/reset-password", resetPassword);
 
-  // router.put("/reset/", resetPassword);
 
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)

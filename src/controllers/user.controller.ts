@@ -239,9 +239,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     // Generate password reset token with short expiration time (e.g., 15 minutes)
     const token = jwt.sign({ userId: user.UserID }, JWT_SECRET, { expiresIn: '15m' });
-if(jwt.TokenExpiredError){
-  res.status(401).json("Token Expired")
-}
+
     // Send email with password reset link
     const link = `https://plaintiffaid.vercel.app/#/newpassword/${token}`
     const firmName = user.Username
@@ -302,24 +300,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-// export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
-//   try {
-//     const { email} = req.body;
-//     const user = await getUserByEmail(email)
-//    if(!user){
-//     return res.status(401).json("email not found")
-//    }
-   
 
-   
-//     //after this, hash the password
-//     await updateUserPassword(email, newPassword);
-//     return res.status(200).json("Password reset successfully");
-
-//   } catch (error) {
-//     return res.status(500).json(error);
-//   }
-// }
 
 //function to sign out the user... 
 export const signOut = async (req: Request, res: Response) => {
