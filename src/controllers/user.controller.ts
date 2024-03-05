@@ -418,7 +418,6 @@ export const createClientController = async (req: Request, res: Response) => {
 //   }
 // };
 
-
 export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId: number = parseInt(req.params.UserID, 10);
@@ -432,20 +431,11 @@ export const downloadTemplateController = async (req: Request, res: Response): P
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet('Clients');
 
+    // Clear existing worksheet content
+    worksheet.spliceRows(1, worksheet.rowCount); // Remove all existing rows
+
     // Add headers to the worksheet
     worksheet.addRow(['FirstName', 'LastName', 'ContactNumber', 'Email', 'Address', 'Gender', 'CaseName', 'CaseDescription']);
-
-    // Enforce enum for gender
-    const validGenders = ['Male', 'Female'];
-    const genderColumn = worksheet.getColumn('Gender');
-    genderColumn.eachCell((cell) => {
-      const cellValue = String(cell.value).trim(); // Cast to string and trim any whitespace
-      if (validGenders.includes(cellValue)) {
-        cell.value = cellValue; // Keep the value as it is if it's a valid gender
-      } else {
-        cell.value = ''; // Set empty string if the value is not valid
-      }
-    });
 
     // Generate the Excel file in memory
     const excelBuffer = await workbook.xlsx.writeBuffer();
@@ -461,6 +451,7 @@ export const downloadTemplateController = async (req: Request, res: Response): P
     res.status(500).send('Internal server error');
   }
 };
+
 
 
 export const ClientBatchUpload = async (req: Request, res: Response) => {
@@ -524,9 +515,9 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
     await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
   }));
     res.status(200).json({ message: 'Data uploaded successfully' });
-  } catch (error) {
+  } catch (error:any) {
     console.error('Error uploading file:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message:error.message });
   }
 };
 
