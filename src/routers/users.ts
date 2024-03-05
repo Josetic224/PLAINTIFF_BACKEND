@@ -60,6 +60,6 @@ router.get("/verify/:Token",verifyEmail)
   router.get('/schedules/upcoming-appointment/:UserID',getAppointmentsForNext7Days),
   router.get('/schedules/count/:UserID',getNumberOfSchedules),
   router.get('/schedules/all_schedules/:UserID', getAllSchedules)
-  router.delete("/client/delete/:UserID",deleteClient)
+  router.delete("/client/delete/:userId/:clientId/:caseId",deleteClient)
  
   };
