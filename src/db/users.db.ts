@@ -270,7 +270,9 @@ export const createClientManually = async(userId:number, firstname:string,lastna
     })
 return newClient
   } catch (error:any) {
-    throw new Error(error)
+    if (error.code === 'P2002' && error.meta?.target?.includes('Email')) {
+     throw new Error("client with this email already exists");
+    }
   }
 }
 

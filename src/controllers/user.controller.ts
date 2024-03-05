@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { Case, Client, PrismaClient, User } from '@prisma/client';
+import { Case, Client, PrismaClient, Schedule, User } from '@prisma/client';
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
 
@@ -339,10 +339,10 @@ export const createClientController = async (req: Request, res: Response) => {
     }
 
     const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription, userId);
+
     res.status(201).json(newClient);
-  } catch (error) {
-    console.error('Error creating client:', error);
-    res.status(500).send('Internal server error');
+  } catch (error:any) {
+    res.status(500).json({message:error.message})
   }
 };
 
@@ -806,33 +806,6 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
 
 
 
-export const getFirstUpcomingAppointment = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = parseInt(req.params.UserID, 10); // Assuming the parameter is named UserID and contains the user ID
-    const user = await getUserById(userId)
-    if(!user){
-      res.status(403).json("forbidden")
-    }
-    const now = new Date();
-    const upcomingAppointment = await prisma.schedule.findFirst({
-      where: {
-        dateOfAppointment: {
-          gte: now,
-        },
-      },
-      orderBy: {
-        dateOfAppointment: 'asc',
-      },
-    });
-    if (upcomingAppointment) {
-      res.status(200).json({ upcomingAppointment });
-    } else {
-      res.status(404).json({ message: 'No upcoming appointment found' });
-    }
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 
 
@@ -880,6 +853,51 @@ export const getAllSchedules = async (req: Request, res: Response): Promise<void
   res.status(200).json(allSchedule)
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const getAppointmentsForNext7Days= async (req: Request, res: Response) => {
+  // Calculate today's date
+  const today = new Date();
+
+  // Calculate the date 7 days from now
+  const next7Days = new Date();
+  next7Days.setDate(today.getDate() + 8); // next7Days will be exactly 7 days from now excluding yesterday
+
+  // Calculate the date 1 day from now
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1); // tomorrow will be exactly 1 day from today
+
+  const userId = parseInt(req.params.UserID, 10);
+
+  try {
+    // Query upcoming schedules (less than 7 days from now excluding yesterday) and limit to the first four
+    await getUserById(userId);
+  
+    const upcomingSchedules = await prisma.schedule.findMany({
+      where: {
+        userId: userId,
+        dateOfAppointment: {
+          gte: tomorrow, // Greater than or equal to tomorrow (to exclude today)
+        }
+      },
+      include: {
+        client: true // Include client details
+      },
+      take: 4 // Limit to the first four schedules
+    });
+
+    // Check if schedules are found
+    if (upcomingSchedules.length === 0) {
+      // If no schedules are found, return a specific response
+      res.status(200).json({ message: "No upcoming schedules found less than 7 days from now excluding yesterday." });
+    } else {
+      // If schedules are found, return the first four
+      res.status(200).json(upcomingSchedules);
+    }
+  } catch (error: any) {
+    console.error("Error fetching upcoming schedules:", error.message);
+    res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
 };
 
