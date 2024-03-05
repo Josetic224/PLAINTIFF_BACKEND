@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('Male', 'Female');
+
 -- CreateTable
 CREATE TABLE "users" (
     "UserID" SERIAL NOT NULL,
@@ -30,6 +33,7 @@ CREATE TABLE "clients" (
     "Email" TEXT NOT NULL,
     "Address" TEXT NOT NULL,
     "Gender" TEXT NOT NULL,
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "CaseID" INTEGER,
     "userId" INTEGER NOT NULL,
 
