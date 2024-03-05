@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { Case, Client, PrismaClient, Schedule, User } from '@prisma/client';
+import { Case, Client, Prisma, PrismaClient, Schedule, User } from '@prisma/client';
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
 
@@ -243,7 +243,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Send email with password reset link
     const link = `https://plaintiffaid.vercel.app/#/newpassword/${token}`
     const firmName = user.Username
-  const html = await resetEmail(firmName,link)
+    console.log(firmName)
+  const html = await resetEmail(link, firmName)
   const subject = `PLAINTIFFAID RESET PASSWORD`
   sendEmail({
     email: user.Email,
@@ -262,15 +263,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token } = req.query; // Retrieve token from query parameters
-    const { newPassword, confirmPassword } = req.body;
+    const { newPassword} = req.body;
 
     if (!token || typeof token !== 'string') {
       return res.status(400).json({ status: false, message: 'Invalid token' });
     }
 
     // Check if newPassword and confirmPassword match
-    if (newPassword !== confirmPassword) {
-      return res.status(400).json({ status: false, message: 'Passwords do not match' });
+    if (!newPassword) {
+      return res.status(400).json({ status: false, message: 'Password has been used before' });
     }
 
     // Verify the token
@@ -441,8 +442,6 @@ export const downloadTemplateController = async (req: Request, res: Response): P
   }
 };
 
-
-
 export const ClientBatchUpload = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.UserID, 10);
   const assignedUserId = parseInt(req.params.AssignedUserID, 10); // Parse assignedUserId as well
@@ -483,36 +482,39 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
       }
     });
 
-   // Save data to database
-   await Promise.all(clientsData.map(async (row: any[]) => {
-    const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
+    // Save data to database
+    await Promise.all(clientsData.map(async (row: any[]) => {
+      const [_, FirstName, LastName, ContactNumber, EmailObj, Address, Gender, CaseName, CaseDescription] = row;
 
-    // Extracting email from the object
-    const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
+      // Extracting email from the object
+      const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
 
-    // Ensure all fields are valid
-    const genderString = String(Gender).trim();
-    if (!validGenders.includes(genderString)) {
-      throw new Error(`Invalid gender value, Gender value must be either male or female`);
-    }
-    
-    // Ensure other fields are not empty
-    if (!FirstName || !LastName || !ContactNumber || !Email || !Address || !CaseName || !CaseDescription) {
-      throw new Error(`One or more fields are missing in row ${row}`);
-    }
+      // Ensure all fields are valid
+      const genderString = String(Gender).trim();
+      if (!validGenders.includes(genderString)) {
+        throw new Error(`Invalid gender value, Gender value must be either male or female`);
+      }
+      
+      // Ensure other fields are not empty
+      if (!FirstName || !LastName || !ContactNumber || !Email || !Address || !CaseName || !CaseDescription) {
+        throw new Error(`One or more fields are missing in row ${row}`);
+      }
 
-    await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
-  }));
+      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
+    }));
+
     res.status(200).json({ message: 'Data uploaded successfully' });
-  } catch (error:any) {
+  } catch (error: any) {
+    // Check if the error message contains the unique constraint failure indication
+    if (error.message.includes("Unique constraint failed on the fields: (`Email`)")) {
+      return res.status(400).json({ message: 'Duplicate emails found' });
+    }
+
+    // Handle other errors
     console.error('Error uploading file:', error);
-    res.status(500).json({ message:error.message });
+    res.status(500).json({ message: error.message });
   }
 };
-
-
-
-
 
 
 
