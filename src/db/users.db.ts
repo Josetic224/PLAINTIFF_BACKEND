@@ -187,7 +187,9 @@ export const destroyToken = async (id: number) => {
 export const getAllClients = (userId: number) => prisma.client.findMany({
   where: {
     userId: userId,
+    isDeleted:false
   },
+ 
 });
 
 export const getAClient = async (userId: number, clientId: number, caseId:number) => {
