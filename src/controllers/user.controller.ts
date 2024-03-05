@@ -970,3 +970,42 @@ export const getAppointmentsForNext7Days= async (req: Request, res: Response) =>
   }
 };
 
+
+
+
+
+
+export const deleteClient = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10);
+  const clientId = parseInt(req.params.clientId, 10);
+  const caseId = parseInt(req.params.caseId, 10); // Assuming you have caseId in the URL params
+
+  try {
+    // Check if the client exists
+    const client = await prisma.client.findFirst({
+      where: {
+        ClientID: clientId,
+        userId: userId,
+        CaseID:caseId, // Make sure userId is properly passed here
+      },
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    // Update client information to mark as deleted
+    await prisma.client.update({
+      where: {
+        ClientID: clientId,
+      },
+      data: {
+        isDeleted: true,
+      },
+    });
+
+    return res.status(200).json({ message: 'Client marked as deleted successfully' });
+  } catch (error:any) {
+    return res.status(500).json({ status: 'Failed to delete client', message: error.message });
+  }
+};
