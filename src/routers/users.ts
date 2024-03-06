@@ -30,6 +30,7 @@ import {
   restoreClient,
   resetPassword,
   forgotPassword,
+  deleteSchedule,
   
   // deleteUser,
   // senAppointmentReminders,
@@ -68,5 +69,6 @@ router.put("/reset-password", resetPassword);
   router.delete("/client/delete/:userId/:clientId/:caseId",deleteClient)
   router.get('/client/deleted-clients/:userId', getDeletedClients);
   router.put("/client/restore/:userId/:clientId", restoreClient)
+  router.delete("/schedule/delete/:userId/:scheduleId", deleteSchedule)
  
   };
