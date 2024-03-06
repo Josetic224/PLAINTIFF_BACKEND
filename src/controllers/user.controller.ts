@@ -471,9 +471,14 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
 
     // Initialize row array
     const clientsData: any[] = [];
-
+    interface ClientData {}
+    
     // Enum for gender
     const validGenders = ['male', 'female']; // Updated to lowercase
+        // Initialize array to store created clients
+          // Initialize array to store created clients
+          const createdClients: ClientData[] = [];
+
 
     // Iterate through each row in the worksheet and push to clientsData
     worksheet.eachRow((row, rowNumber) => {
@@ -493,16 +498,19 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
       const genderString = String(Gender).trim().toLowerCase(); // Convert to lowercase
       if (!validGenders.includes(genderString)) {
         throw new Error(`Invalid gender value, Gender value must be either male or female`);
+        return;
       }
       
       // Ensure other fields are not empty
       if (!FirstName || !LastName || !ContactNumber || !Email || !Address || !CaseName || !CaseDescription) {
         throw new Error(`One or more fields are missing in row `);
+        return;
       }
 
       // Validate ContactNumber format
       if (!/^\d{11}$/.test(ContactNumber)) {
         throw new Error(`Invalid ContactNumber, ContactNumber must have 11 digits`);
+        return;
       }
 
       // Check if a client with the same email already exists
@@ -513,12 +521,16 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
       });
       if (existingClient) {
         throw new Error(`Client with email ${Email} already exists`);
+        return;
       }
 
-      await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
+      // Create client and push to createdClients array
+      const newClient = await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
+      createdClients.push(newClient);
     }));
 
-    res.status(200).json({ message: 'Data uploaded successfully' });
+
+    res.status(200).json({ message: 'Data uploaded successfully', data:createdClients});
   } catch (error: any) {
     console.error('Error uploading file:', error);
     res.status(500).json({ message: error.message });
@@ -794,9 +806,6 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
   }
 };
 
-//get the first upcoming schedule
-
-
 
 
 
@@ -1012,5 +1021,41 @@ export const restoreClient = async (req: Request, res: Response) => {
   } catch (error: any) {
     // Handle errors
     return res.status(500).json({ status: 'Failed to restore client', message: error.message });
+  }
+};
+
+
+
+export const deleteSchedule = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = parseInt(req.params.userId, 10)
+    const scheduleId = parseInt(req.params.scheduleId, 10); // Assuming the scheduleId is passed in the request parameters
+const user = await getUserById(userId)
+if(!user){
+  res.status(404).json("failed to fetch user by Id")
+}
+    // Check if the schedule exists
+    const existingSchedule = await prisma.schedule.findUnique({
+      where: {
+        userId:userId,
+        id: scheduleId
+      }
+    });
+
+    if (!existingSchedule) {
+      res.status(404).json({ error: 'Schedule not found' });
+      return;
+    }
+
+    // Delete the schedule
+    await prisma.schedule.delete({
+      where: {
+        id: scheduleId
+      }
+    });
+
+    res.status(200).json({ message: 'Schedule deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 };
