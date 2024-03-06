@@ -473,7 +473,7 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
     const clientsData: any[] = [];
 
     // Enum for gender
-    const validGenders = ['Male', 'Female'];
+    const validGenders = ['male', 'female']; // Updated to lowercase
 
     // Iterate through each row in the worksheet and push to clientsData
     worksheet.eachRow((row, rowNumber) => {
@@ -490,14 +490,29 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
       const Email = typeof EmailObj === 'object' && EmailObj.text ? EmailObj.text : '';
 
       // Ensure all fields are valid
-      const genderString = String(Gender).trim();
+      const genderString = String(Gender).trim().toLowerCase(); // Convert to lowercase
       if (!validGenders.includes(genderString)) {
         throw new Error(`Invalid gender value, Gender value must be either male or female`);
       }
       
       // Ensure other fields are not empty
       if (!FirstName || !LastName || !ContactNumber || !Email || !Address || !CaseName || !CaseDescription) {
-        throw new Error(`One or more fields are missing in row ${row}`);
+        throw new Error(`One or more fields are missing in row `);
+      }
+
+      // Validate ContactNumber format
+      if (!/^\d{11}$/.test(ContactNumber)) {
+        throw new Error(`Invalid ContactNumber format, ContactNumber must have 11 digits`);
+      }
+
+      // Check if a client with the same email already exists
+      const existingClient = await prisma.client.findUnique({
+        where: {
+          Email: Email,
+        },
+      });
+      if (existingClient) {
+        throw new Error(`Client with email ${Email} already exists`);
       }
 
       await createClientBatchUpload(userId, FirstName, LastName, ContactNumber, Email, Address, genderString, CaseName, CaseDescription, assignedUserId);
@@ -505,12 +520,6 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: 'Data uploaded successfully' });
   } catch (error: any) {
-    // Check if the error message contains the unique constraint failure indication
-    if (error.message.includes("Unique constraint failed on the fields: (`Email`)")) {
-      return res.status(400).json({ message: 'Duplicate emails found' });
-    }
-
-    // Handle other errors
     console.error('Error uploading file:', error);
     res.status(500).json({ message: error.message });
   }
