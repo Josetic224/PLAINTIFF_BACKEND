@@ -502,7 +502,7 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
 
       // Validate ContactNumber format
       if (!/^\d{11}$/.test(ContactNumber)) {
-        throw new Error(`Invalid ContactNumber format, ContactNumber must have 11 digits`);
+        throw new Error(`Invalid ContactNumber, ContactNumber must have 11 digits`);
       }
 
       // Check if a client with the same email already exists
