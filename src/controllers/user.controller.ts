@@ -839,50 +839,77 @@ export const getAllSchedules = async (req: Request, res: Response): Promise<void
   }
 };
 
-export const getAppointmentsForNext7Days= async (req: Request, res: Response) => {
-  // Calculate today's date
-  const today = new Date();
-
-  // Calculate the date 7 days from now
-  const next7Days = new Date();
-  next7Days.setDate(today.getDate() + 8); // next7Days will be exactly 7 days from now excluding yesterday
-
-  // Calculate the date 1 day from now
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1); // tomorrow will be exactly 1 day from today
-
-  const userId = parseInt(req.params.UserID, 10);
-
+export const getAppointmentsForNext7Days = async (req: Request, res: Response) => {
   try {
-    // Query upcoming schedules (less than 7 days from now excluding yesterday) and limit to the first four
-    await getUserById(userId);
-  
+    const userId = parseInt(req.params.UserID, 10);
+    const today = new Date();
+    const next7Days = new Date(today);
+    next7Days.setDate(today.getDate() + 7);
+
+    // Format dates to DD/MM/YYYY format
+    const formattedToday = formatDate(today);
+    const formattedNext7Days = formatDate(next7Days);
+
+    // Convert formatted dates back to ISO-8601 format
+    const isoFormattedToday = convertToIsoFormat(formattedToday);
+    const isoFormattedNext7Days = convertToIsoFormat(formattedNext7Days);
+
+    // Fetch upcoming schedules for the user within the next 7 days
     const upcomingSchedules = await prisma.schedule.findMany({
       where: {
         userId: userId,
         dateOfAppointment: {
-          gte: tomorrow, // Greater than or equal to tomorrow (to exclude today)
-        }
+          gte: isoFormattedToday,
+          lt: isoFormattedNext7Days,
+        },
       },
       include: {
-        client: true // Include client details
+        client: true,
       },
-      take: 4 // Limit to the first four schedules
+      
+      orderBy: {
+        dateOfAppointment: 'asc', // Order by ascending date
+      },
     });
 
-    // Check if schedules are found
-    if (upcomingSchedules.length === 0) {
-      // If no schedules are found, return a specific response
-      res.status(200).json({ message: "No upcoming schedules found less than 7 days from now excluding yesterday." });
-    } else {
-      // If schedules are found, return the first four
-      res.status(200).json(upcomingSchedules);
+    // Modify the date format and remove the unwanted portion from the date string
+    const modifiedSchedules = upcomingSchedules.map(schedule => ({
+      ...schedule,
+      dateOfAppointment: formatDateForDisplay(schedule.dateOfAppointment.toISOString()),
+    }));
+    
+    if(modifiedSchedules.length === 0){
+      res.status(404).json("No upcoming schedules found less than 7 days from now excluding yesterday.")
     }
-  } catch (error: any) {
-    console.error("Error fetching upcoming schedules:", error.message);
+    
+
+    res.status(200).json(modifiedSchedules);
+  } catch (error:any) {
+    console.error("Error fetching upcoming schedules:", error);
     res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
 };
+
+// Function to format date to DD/MM/YYYY
+function formatDate(date:Date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // January is 0!
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+// Function to convert DD/MM/YYYY formatted date to ISO-8601 format
+function convertToIsoFormat(dateString:String) {
+  const [day, month, year] = dateString.split('/');
+  return `${year}-${month}-${day}T00:00:00.000Z`;
+}
+
+// Function to format date for display (DD-MM-YYYY)
+function formatDateForDisplay(dateString:String) {
+  const [datePart] = dateString.split('T'); // Get only the date part
+  const [year, month, day] = datePart.split('-');
+  return `${day}-${month}-${year}`;
+}
 
 
 
