@@ -38,7 +38,7 @@ import {
 } from "../controllers/user.controller";
 
 import { validateUserLogin, validateUserRegistration } from "../validator/validator";
-import { createClientManually } from "../db/users.db";
+import { createClientManually, updateSettings } from "../db/users.db";
 
 // import { updateUser } from "../db/users.db";
 
@@ -70,5 +70,20 @@ router.put("/reset-password", resetPassword);
   router.get('/client/deleted-clients/:userId', getDeletedClients);
   router.put("/client/restore/:userId/:clientId", restoreClient)
   router.delete("/schedule/delete/:userId/:scheduleId", deleteSchedule)
- 
-  };
+  router.put('/users/settings/:userId', async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.userId, 10);
+    const settingsData = req.body;
+  
+    try {
+      const result = await updateSettings(userId, settingsData);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({ error: 'Error updating settings' });
+    }
+  });
+}  
+
+
+
+

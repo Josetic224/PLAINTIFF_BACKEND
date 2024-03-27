@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
 
-
 const prisma = new PrismaClient();
 
 export const getAllUsers = () => prisma.user.findMany();
@@ -16,7 +15,7 @@ export const getUserByEmail = (email: string) =>
 export const getUserById = async (userId: number) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { UserID: userId }
+      where: { UserID: userId },
     });
     return user;
   } catch (error) {
@@ -25,13 +24,11 @@ export const getUserById = async (userId: number) => {
   }
 };
 
-
-
 export const createUser = async (
   FirmName: string,
   password: string,
   email: string,
-  PhoneNumber:string
+  PhoneNumber: string
 ) => {
   try {
     const hashedPassword = hashSync(password, 10);
@@ -40,13 +37,13 @@ export const createUser = async (
 
     const newUser = await prisma.user.create({
       data: {
-        Username:FirmName,
+        Username: FirmName,
         Email: email.toLocaleLowerCase(),
         Password: hashedPassword,
-        PhoneNumber:PhoneNumber,
+        PhoneNumber: PhoneNumber,
         RoleID: 1,
-        Token: token
-      }
+        Token: token,
+      },
     });
 
     return newUser;
@@ -56,7 +53,10 @@ export const createUser = async (
   }
 };
 
-export const comparePassword = async (password: string, hashedPassword: string) => {
+export const comparePassword = async (
+  password: string,
+  hashedPassword: string
+) => {
   try {
     if (!compareSync(password, hashedPassword)) {
       // If passwords don't match, return false
@@ -64,25 +64,24 @@ export const comparePassword = async (password: string, hashedPassword: string) 
     }
     // If passwords match, return true
     return true;
-  } catch (error:any) {
+  } catch (error: any) {
     throw new Error("Password is Incorrect!");
   }
 };
 
-
 //update password
-export const updateUserPassword = async (userId:number, 
-  newPassword: string,
+export const updateUserPassword = async (
+  userId: number,
+  newPassword: string
 ) => {
   try {
     // Update the user's email and password
     const updatedUser = await prisma.user.update({
-      where: { 
-      UserID:userId},
-      data:
-      {
+      where: {
+        UserID: userId,
+      },
+      data: {
         Password: hashSync(newPassword, 10),
-
       },
     });
 
@@ -93,8 +92,6 @@ export const updateUserPassword = async (userId:number,
     throw new Error("Failed to update user.");
   }
 };
-
-
 
 export const jwtverify = async (token: string) => {
   try {
@@ -113,7 +110,7 @@ export const verification = async (id: number, isVerified: boolean) => {
     const verifying = await prisma.user.update({
       where: { UserID: id },
       data: {
-        isVerified: isVerified
+        isVerified: isVerified,
       },
     });
 
@@ -124,7 +121,6 @@ export const verification = async (id: number, isVerified: boolean) => {
     throw new Error("Failed to update user.");
   }
 };
-
 
 export const createNewToken = async (payload: any) => {
   try {
@@ -142,13 +138,12 @@ export const createNewToken = async (payload: any) => {
   }
 };
 
-
 export const updateUserToken = async (id: number, token: string) => {
   try {
     // Update the user's token
     const updatedUser = await prisma.user.update({
       where: { UserID: id },
-      data: { Token: token }
+      data: { Token: token },
     });
 
     return updatedUser;
@@ -158,16 +153,13 @@ export const updateUserToken = async (id: number, token: string) => {
     throw new Error("Failed to update user token.");
   }
 };
-
-
-
 
 export const destroyToken = async (id: number) => {
   try {
     // Update the user's token
     const updatedUser = await prisma.user.update({
       where: { UserID: id },
-      data: { Token: "" }
+      data: { Token: "" },
     });
 
     return updatedUser;
@@ -178,28 +170,28 @@ export const destroyToken = async (id: number) => {
   }
 };
 
-
-
-
-
 // for client
 
-export const getAllClients = (userId: number) => prisma.client.findMany({
-  where: {
-    userId: userId,
-    isDeleted:false
-  },
- 
-});
+export const getAllClients = (userId: number) =>
+  prisma.client.findMany({
+    where: {
+      userId: userId,
+      isDeleted: false,
+    },
+  });
 
-export const getAClient = async (userId: number, clientId: number, caseId:number) => {
+export const getAClient = async (
+  userId: number,
+  clientId: number,
+  caseId: number
+) => {
   try {
     const client = await prisma.client.findFirst({
       where: {
         userId: userId,
         ClientID: clientId,
-        CaseID:caseId
-      }
+        CaseID: caseId,
+      },
     });
     return client !== null; // Return true if client exists, false otherwise
   } catch (error) {
@@ -209,45 +201,55 @@ export const getAClient = async (userId: number, clientId: number, caseId:number
 };
 
 //get client by Firstname
-export const getClientByFirstname = async (firstname: string, userId:number) => {
+export const getClientByFirstname = async (
+  firstname: string,
+  userId: number
+) => {
   try {
     const client = await prisma.client.findFirst({
       where: {
-        userId:userId,
-        FirstName: firstname // Specify the field and its value directly
-      }
+        userId: userId,
+        FirstName: firstname, // Specify the field and its value directly
+      },
     });
     return client;
-  } catch (error:any) {
+  } catch (error: any) {
     throw new Error(`Error finding client by firstname: ${error.message}`);
   }
 };
 
-
-
-export const getClientByLastname = async(lastname:string)=>{
+export const getClientByLastname = async (lastname: string) => {
   try {
-   const client = await prisma.client.findFirst({where:{LastName:lastname}})
-   return client;
+    const client = await prisma.client.findFirst({
+      where: { LastName: lastname },
+    });
+    return client;
   } catch (error) {
-    throw new Error(`Error finding client by firstname`)
+    throw new Error(`Error finding client by firstname`);
   }
- 
-}
+};
 
-
-export const getClientByCaseId = async(caseId:number)=>{
+export const getClientByCaseId = async (caseId: number) => {
   try {
-      const client = await prisma.case.findFirst({where:{CaseID:caseId}})
-  return client;
+    const client = await prisma.case.findFirst({ where: { CaseID: caseId } });
+    return client;
   } catch (error) {
-    throw new Error(`Error finding Client by CaseId`)
+    throw new Error(`Error finding Client by CaseId`);
   }
+};
 
-}
-
-
-export const createClientManually = async(userId:number, firstname:string,lastname:string,contactNumber:string,email:string,address:string,Gender:string,CaseName:string, CaseDescription:string, assignedUserId:number)=>{
+export const createClientManually = async (
+  userId: number,
+  firstname: string,
+  lastname: string,
+  contactNumber: string,
+  email: string,
+  address: string,
+  Gender: string,
+  CaseName: string,
+  CaseDescription: string,
+  assignedUserId: number
+) => {
   try {
     const newClient = await prisma.client.create({
       data: {
@@ -256,31 +258,41 @@ export const createClientManually = async(userId:number, firstname:string,lastna
         ContactNumber: contactNumber,
         Email: email,
         Address: address,
-        Gender:Gender,
-        User:{connect:{UserID:userId}}, // Connect client to user
-        Case:{
-          create:{
-            CaseName:CaseName,
-            CaseDescription:CaseDescription,
-            AssignedUserID:assignedUserId
-          }
-        }
+        Gender: Gender,
+        User: { connect: { UserID: userId } }, // Connect client to user
+        Case: {
+          create: {
+            CaseName: CaseName,
+            CaseDescription: CaseDescription,
+            AssignedUserID: assignedUserId,
+          },
+        },
       },
-      include:{
-        Case:true
-      }
-    })
-return newClient
-  } catch (error:any) {
-    if (error.code === 'P2002' && error.meta?.target?.includes('Email')) {
-     throw new Error("client with this email already exists");
+      include: {
+        Case: true,
+      },
+    });
+    return newClient;
+  } catch (error: any) {
+    if (error.code === "P2002" && error.meta?.target?.includes("Email")) {
+      throw new Error("client with this email already exists");
     }
   }
-}
+};
 
-
-
-export const updateClientManually = async (clientId: number, firstname: string, lastname: string, contactNumber: string, email: string, address: string, Gender: string, caseId:number, CaseName: string, CaseDescription: string, assignedUserId: number) => {
+export const updateClientManually = async (
+  clientId: number,
+  firstname: string,
+  lastname: string,
+  contactNumber: string,
+  email: string,
+  address: string,
+  Gender: string,
+  caseId: number,
+  CaseName: string,
+  CaseDescription: string,
+  assignedUserId: number
+) => {
   try {
     const updatedClient = await prisma.client.update({
       where: { ClientID: clientId },
@@ -293,96 +305,157 @@ export const updateClientManually = async (clientId: number, firstname: string, 
         Gender: Gender,
         Case: {
           upsert: {
-            where: {CaseID:caseId}, // Upsert the case associated with the client
+            where: { CaseID: caseId }, // Upsert the case associated with the client
             create: {
               CaseName: CaseName,
               CaseDescription: CaseDescription,
-              AssignedUserID: assignedUserId
+              AssignedUserID: assignedUserId,
             },
             update: {
               CaseName: CaseName,
               CaseDescription: CaseDescription,
-              AssignedUserID: assignedUserId
-            }
-          }
-        }
+              AssignedUserID: assignedUserId,
+            },
+          },
+        },
       },
       include: {
-        Case: true
-      }
+        Case: true,
+      },
     });
     return updatedClient;
-  } catch (error:any) {
+  } catch (error: any) {
     throw new Error(error);
   }
 };
 
-
-export const createClientBatchUpload = async(userId:number, FirstName:string,LastName:string,ContactNumber:string,Email:string,Address:string,Gender:string,CaseName:string, CaseDescription:string, assignedUserId:number)=>{
+export const createClientBatchUpload = async (
+  userId: number,
+  FirstName: string,
+  LastName: string,
+  ContactNumber: string,
+  Email: string,
+  Address: string,
+  Gender: string,
+  CaseName: string,
+  CaseDescription: string,
+  assignedUserId: number
+) => {
   try {
     const newClient = await prisma.client.create({
-      
       data: {
         FirstName: FirstName,
         LastName: LastName,
         ContactNumber: ContactNumber,
         Email: Email,
         Address: Address,
-        Gender:Gender,
-        User:{connect:{UserID:userId}}, // Connect client to user
-        Case:{
-          create:{
-            CaseName:CaseName,
-            CaseDescription:CaseDescription,
-            AssignedUserID:assignedUserId
-          }
-        }
+        Gender: Gender,
+        User: { connect: { UserID: userId } }, // Connect client to user
+        Case: {
+          create: {
+            CaseName: CaseName,
+            CaseDescription: CaseDescription,
+            AssignedUserID: assignedUserId,
+          },
+        },
       },
-      include:{
-        Case:true
-      }
-    })
-return newClient
-  } catch (error:any) {
-    throw new Error(error)
+      include: {
+        Case: true,
+      },
+    });
+    return newClient;
+  } catch (error: any) {
+    throw new Error(error);
   }
-}
+};
 
-
-
-export const createSchedule = async(req:Request, Res:Response)=>{
+export const createSchedule = async (req: Request, Res: Response) => {
   try {
-    const createdSchedule = await prisma
-  } catch (error:any) {
-    throw new Error(error.message)
+    const createdSchedule = await prisma;
+  } catch (error: any) {
+    throw new Error(error.message);
   }
-  
-}
-
+};
 
 //Function to check if client exists by name or email
-export const checkClientExists = async (clientName: string, clientEmail: string): Promise<void> => {
+export const checkClientExists = async (
+  clientName: string,
+  clientEmail: string
+): Promise<void> => {
   try {
     // Check if client exists by name
     const clientByName = await prisma.client.findFirst({
       where: {
-        FirstName: clientName
-      }
+        FirstName: clientName,
+      },
     });
 
     // Check if client exists by email
     const clientByEmail = await prisma.client.findFirst({
       where: {
-        Email: clientEmail
-      }
+        Email: clientEmail,
+      },
     });
 
     // If client does not exist by name or email, throw an error
     if (!clientByName && !clientByEmail) {
-      throw new Error('Client not found');
+      throw new Error("Client not found");
     }
   } catch (error) {
     throw error; // Re-throw the error to be handled by the caller
   }
 };
 
+interface Settings {
+  settingsID: number;
+  Firmname: string;
+  Email: string;
+  Location: string | null;
+  FirmDescription: string | null;
+  CurrentCountry: string | null;
+  // Add any other properties here
+}
+
+export const updateSettings = async (
+  userId: number,
+  settingsData: Settings
+) => {
+  try {
+    // Fetch user and settings
+    const user = await prisma.user.findUnique({
+      where: { UserID: userId },
+      include: { settings: true },
+    });
+
+    if (!user || !user.settings) {
+      throw new Error("User or settings not found");
+    }
+
+    const settings: Settings = user.settings as unknown as Settings;
+
+    // Update Username and Email fields of User
+    const updatedUser = await prisma.user.update({
+      where: { UserID: userId },
+      data: {
+        Username: settingsData.Firmname || user.Username,
+        Email: settingsData.Email || user.Email,
+      },
+    });
+
+    // Save other settings
+    const updatedSettings = await prisma.settings.update({
+      where: { settingsID: settings.settingsID },
+      data: {
+        Location: settingsData.Location || settings.Location,
+        FirmDescription:
+          settingsData.FirmDescription || settings.FirmDescription,
+        CurrentCountry: settingsData.CurrentCountry || settings.CurrentCountry,
+      },
+    });
+
+    return { user: updatedUser, settings: updatedSettings };
+  } catch (error) {
+    console.error("Error updating settings:", error);
+    throw error;
+  }
+};
