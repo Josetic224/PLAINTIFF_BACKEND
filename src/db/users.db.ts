@@ -7,6 +7,39 @@ dotenv.config({ path: ".env" });
 
 const prisma = new PrismaClient();
 
+async function connectToDatabase() {
+  try {
+      await prisma.$connect();
+      console.log('Connected to the database');
+  } catch (error:any) {
+      console.error('Error connecting to the database:', error.message);
+      // Retry mechanism
+      console.log('Retrying connection...');
+      await retryConnection(3); // Retry 3 times
+  }
+}
+
+async function retryConnection(retries: number) {
+  for (let i = 0; i < retries; i++) {
+      try {
+          await prisma.$connect();
+          console.log('Connected to the database');
+          return; // Connection successful, exit retry loop
+      } catch (error:any) {
+          console.error('Error connecting to the database:', error.message);
+          if (i < retries - 1) {
+              // Delay before retrying
+              const delay = Math.pow(2, i) * 1000; // Exponential backoff
+              console.log(`Retrying in ${delay} milliseconds...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+          }
+      }
+  }
+  console.error('Unable to connect to the database after retrying');
+}
+
+export { connectToDatabase, prisma };
+
 export const getAllUsers = () => prisma.user.findMany();
 
 export const getUserByEmail = (email: string) =>

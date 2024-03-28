@@ -3,8 +3,26 @@ import "dotenv/config";
 import routers from "./routers";
 import helmet from "helmet";
 import cors from "cors"
+import { connectToDatabase, prisma } from "./db/users.db";
 
 const app: Application = express();
+
+
+async function startApp() {
+  try {
+      await connectToDatabase();
+      // Proceed with your application logic after successful connection
+      // For example:
+      const users = await prisma.user.findMany();
+      console.log('Users:', users);
+  } catch (error) {
+      console.error('Error starting the application:', error);
+  } finally {
+      await prisma.$disconnect(); // Disconnect from the database when the application exits
+  }
+}
+
+startApp();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
