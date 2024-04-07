@@ -71,7 +71,7 @@ router.put("/reset-password", resetPassword);
   router.put("/client/restore/:userId/:clientId", restoreClient)
   router.delete("/schedule/delete/:userId/:scheduleId", deleteSchedule)
   router.put('/users/settings/:userId', async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.userId, 10);
+    const userId = req.params.userId
     const settingsData = req.body;
   
     try {

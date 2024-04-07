@@ -1,9 +1,6 @@
--- CreateEnum
-CREATE TYPE "Gender" AS ENUM ('Male', 'Female');
-
 -- CreateTable
 CREATE TABLE "users" (
-    "UserID" SERIAL NOT NULL,
+    "UserID" TEXT NOT NULL,
     "Username" TEXT,
     "Password" TEXT NOT NULL,
     "Email" TEXT NOT NULL,
@@ -17,16 +14,16 @@ CREATE TABLE "users" (
 
 -- CreateTable
 CREATE TABLE "roles" (
-    "RoleID" SERIAL NOT NULL,
+    "RoleID" TEXT NOT NULL,
     "RoleName" TEXT NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
 
     CONSTRAINT "roles_pkey" PRIMARY KEY ("RoleID")
 );
 
 -- CreateTable
 CREATE TABLE "clients" (
-    "ClientID" SERIAL NOT NULL,
+    "ClientID" TEXT NOT NULL,
     "FirstName" TEXT NOT NULL,
     "LastName" TEXT NOT NULL,
     "ContactNumber" TEXT NOT NULL,
@@ -34,50 +31,50 @@ CREATE TABLE "clients" (
     "Address" TEXT NOT NULL,
     "Gender" TEXT NOT NULL,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
-    "CaseID" INTEGER,
-    "userId" INTEGER NOT NULL,
+    "CaseID" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
 
     CONSTRAINT "clients_pkey" PRIMARY KEY ("ClientID")
 );
 
 -- CreateTable
 CREATE TABLE "cases" (
-    "CaseID" SERIAL NOT NULL,
+    "CaseID" TEXT NOT NULL,
     "CaseName" TEXT NOT NULL,
     "CaseDescription" TEXT NOT NULL,
-    "AssignedUserID" INTEGER NOT NULL,
+    "AssignedUserID" TEXT NOT NULL,
 
     CONSTRAINT "cases_pkey" PRIMARY KEY ("CaseID")
 );
 
 -- CreateTable
 CREATE TABLE "document" (
-    "DocumentID" SERIAL NOT NULL,
+    "DocumentID" TEXT NOT NULL,
     "DocumentName" TEXT NOT NULL,
     "FilePath" TEXT NOT NULL,
     "Content" BYTEA NOT NULL,
     "UploadDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "ClientID" INTEGER NOT NULL,
+    "ClientID" TEXT NOT NULL,
 
     CONSTRAINT "document_pkey" PRIMARY KEY ("DocumentID")
 );
 
 -- CreateTable
 CREATE TABLE "Schedule" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "clientName" TEXT NOT NULL,
     "clientEmail" TEXT NOT NULL,
     "dateOfAppointment" TIMESTAMP(3) NOT NULL,
     "timeOfAppointment" TEXT NOT NULL,
     "scheduleDetails" TEXT NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
 
     CONSTRAINT "Schedule_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Contact" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "companyName" TEXT NOT NULL,
@@ -88,13 +85,13 @@ CREATE TABLE "Contact" (
 
 -- CreateTable
 CREATE TABLE "settings" (
-    "settingsID" SERIAL NOT NULL,
+    "settingsID" TEXT NOT NULL,
     "Firmname" TEXT NOT NULL,
     "Email" TEXT NOT NULL,
     "Location" TEXT,
     "FirmDescription" TEXT,
     "CurrentCountry" TEXT,
-    "newUserID" INTEGER NOT NULL,
+    "newUserID" TEXT NOT NULL,
 
     CONSTRAINT "settings_pkey" PRIMARY KEY ("settingsID")
 );
@@ -130,7 +127,7 @@ CREATE UNIQUE INDEX "settings_newUserID_key" ON "settings"("newUserID");
 ALTER TABLE "roles" ADD CONSTRAINT "roles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("UserID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "clients" ADD CONSTRAINT "clients_CaseID_fkey" FOREIGN KEY ("CaseID") REFERENCES "cases"("CaseID") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "clients" ADD CONSTRAINT "clients_CaseID_fkey" FOREIGN KEY ("CaseID") REFERENCES "cases"("CaseID") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "clients" ADD CONSTRAINT "clients_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("UserID") ON DELETE RESTRICT ON UPDATE CASCADE;

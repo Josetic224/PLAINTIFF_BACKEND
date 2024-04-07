@@ -45,7 +45,7 @@ export const getAllUsers = () => prisma.user.findMany();
 export const getUserByEmail = (email: string) =>
   prisma.user.findFirst({ where: { Email: email } });
 
-export const getUserById = async (userId: number) => {
+export const getUserById = async (userId: string) => {
   try {
     const user = await prisma.user.findUnique({
       where: { UserID: userId },
@@ -104,7 +104,7 @@ export const comparePassword = async (
 
 //update password
 export const updateUserPassword = async (
-  userId: number,
+  userId: string,
   newPassword: string
 ) => {
   try {
@@ -137,7 +137,7 @@ export const jwtverify = async (token: string) => {
   }
 };
 //update for verification
-export const verification = async (id: number, isVerified: boolean) => {
+export const verification = async (id: string, isVerified: boolean) => {
   try {
     // Update the user's isVerified status
     const verifying = await prisma.user.update({
@@ -171,7 +171,7 @@ export const createNewToken = async (payload: any) => {
   }
 };
 
-export const updateUserToken = async (id: number, token: string) => {
+export const updateUserToken = async (id:string, token: string) => {
   try {
     // Update the user's token
     const updatedUser = await prisma.user.update({
@@ -187,7 +187,7 @@ export const updateUserToken = async (id: number, token: string) => {
   }
 };
 
-export const destroyToken = async (id: number) => {
+export const destroyToken = async (id:string) => {
   try {
     // Update the user's token
     const updatedUser = await prisma.user.update({
@@ -205,7 +205,7 @@ export const destroyToken = async (id: number) => {
 
 // for client
 
-export const getAllClients = (userId: number) =>
+export const getAllClients = (userId:string) =>
   prisma.client.findMany({
     where: {
       userId: userId,
@@ -214,9 +214,9 @@ export const getAllClients = (userId: number) =>
   });
 
 export const getAClient = async (
-  userId: number,
-  clientId: number,
-  caseId: number
+  userId:string,
+  clientId:string,
+  caseId:string
 ) => {
   try {
     const client = await prisma.client.findFirst({
@@ -236,7 +236,7 @@ export const getAClient = async (
 //get client by Firstname
 export const getClientByFirstname = async (
   firstname: string,
-  userId: number
+  userId:string
 ) => {
   try {
     const client = await prisma.client.findFirst({
@@ -262,7 +262,7 @@ export const getClientByLastname = async (lastname: string) => {
   }
 };
 
-export const getClientByCaseId = async (caseId: number) => {
+export const getClientByCaseId = async (caseId:string) => {
   try {
     const client = await prisma.case.findFirst({ where: { CaseID: caseId } });
     return client;
@@ -272,7 +272,7 @@ export const getClientByCaseId = async (caseId: number) => {
 };
 
 export const createClientManually = async (
-  userId: number,
+  userId:string,
   firstname: string,
   lastname: string,
   contactNumber: string,
@@ -281,7 +281,7 @@ export const createClientManually = async (
   Gender: string,
   CaseName: string,
   CaseDescription: string,
-  assignedUserId: number
+  assignedUserId: string
 ) => {
   try {
     const newClient = await prisma.client.create({
@@ -314,17 +314,17 @@ export const createClientManually = async (
 };
 
 export const updateClientManually = async (
-  clientId: number,
+  clientId:string,
   firstname: string,
   lastname: string,
   contactNumber: string,
   email: string,
   address: string,
   Gender: string,
-  caseId: number,
+  caseId:string,
   CaseName: string,
   CaseDescription: string,
-  assignedUserId: number
+  assignedUserId: string
 ) => {
   try {
     const updatedClient = await prisma.client.update({
@@ -363,7 +363,7 @@ export const updateClientManually = async (
 };
 
 export const createClientBatchUpload = async (
-  userId: number,
+  userId: string,
   FirstName: string,
   LastName: string,
   ContactNumber: string,
@@ -372,7 +372,7 @@ export const createClientBatchUpload = async (
   Gender: string,
   CaseName: string,
   CaseDescription: string,
-  assignedUserId: number
+  assignedUserId: string
 ) => {
   try {
     const newClient = await prisma.client.create({
@@ -440,7 +440,7 @@ export const checkClientExists = async (
 };
 
 interface Settings {
-  settingsID: number;
+  settingsID:string;
   Firmname: string;
   Email: string;
   Location: string | null;
@@ -450,7 +450,7 @@ interface Settings {
 }
 
 export const updateSettings = async (
-  userId: number,
+  userId:string,
   settingsData: Settings
 ) => {
   try {

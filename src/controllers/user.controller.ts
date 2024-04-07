@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import { Case, Client, Prisma, PrismaClient, Schedule, User } from '@prisma/client';
+import fs from 'fs'
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
 
@@ -37,6 +38,8 @@ import { generateDynamicEmail } from "../middleware/html";
 import { generateEmailTemplate } from "../Appointment";
 import { JWT_SECRET } from "../config/secrets";
 import { resetEmail } from "../middleware/resetEmail";
+import { fsync } from "fs";
+import { blob } from "stream/consumers";
 
 
 
@@ -306,7 +309,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 //function to sign out the user... 
 export const signOut = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.UserID, 10);
+    const userId =req.params.UserID
 
     // Get user by id
     const user = await getUserById(userId);
@@ -386,7 +389,7 @@ export const createClientController = async (req: Request, res: Response) => {
     }
 
     // Continue with your existing code
-    const userId = parseInt(req.params.UserID, 10); // Extract userId from URL params
+    const userId = req.params.UserID // Extract userId from URL params
     const authenticatedUser = await getUserById(userId);
 
     if (!authenticatedUser) {
@@ -410,7 +413,7 @@ export const createClientController = async (req: Request, res: Response) => {
 
 export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId: number = parseInt(req.params.UserID, 10);
+    const userId: string =req.params.UserID
     const user = await getUserById(userId);
     if (!user) {
       res.status(403).json("Forbidden");
@@ -443,8 +446,8 @@ export const downloadTemplateController = async (req: Request, res: Response): P
 };
 
 export const ClientBatchUpload = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.UserID, 10);
-  const assignedUserId = parseInt(req.params.AssignedUserID, 10); // Parse assignedUserId as well
+  const userId =req.params.UserID
+  const assignedUserId =req.params.AssignedUserID // Parse assignedUserId as well
 
   try {
     // Check if user is authenticated
@@ -546,7 +549,7 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
 export const Allclients = async (req: Request, res: Response) => {
   //perform the try catch 
   try {
-    const userId = parseInt(req.params.UserID, 10)
+    const userId = req.params.UserID
     const user = await getUserById(userId)
     if (!user) {
       res.status(403).json("forbidden")
@@ -573,7 +576,7 @@ export const Allclients = async (req: Request, res: Response) => {
 
 export const clientByFirstname = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.UserID);
+    const userId = req.params.UserID
     const user = await getUserById(userId);
     if (!user) {
       return res.status(403).json("Forbidden"); // Send response and exit the function
@@ -603,7 +606,7 @@ export const clientByFirstname = async (req: Request, res: Response) => {
 
 export const clientByLastname = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.UserID, 10)
+    const userId = req.params.UserID
     const user = await getUserById(userId)
     if (!user) {
       res.status(403).json("forbidden")
@@ -625,7 +628,7 @@ export const clientByLastname = async (req: Request, res: Response) => {
 }
 export const clientByCaseId = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.UserID, 10)
+    const userId =req.params.UserID
     const user = await getUserById(userId)
     if (!user) {
       res.status(403).json({
@@ -652,9 +655,9 @@ export const clientByCaseId = async (req: Request, res: Response) => {
 
 
 export const updateClient = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.userId, 10);
-  const clientId = parseInt(req.params.clientId, 10);
-  const caseId = parseInt(req.params.caseId, 10)
+  const userId = req.params.userId
+  const clientId = req.params.clientId
+  const caseId = req.params.caseId
   const { firstname, lastname, contactNumber, email, address, gender, caseName, caseDescription } = req.body;
 
   try {
@@ -706,7 +709,7 @@ export const updateClient = async (req: Request, res: Response) => {
 
 export const Totalclients = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId: number = parseInt(req.params.UserID, 10);
+    const userId: string =req.params.UserID
     const user = await getUserById(userId);
     if (!user) {
       res.status(403).json("Forbidden");
@@ -746,7 +749,7 @@ export const Totalclients = async (req: Request, res: Response): Promise<void> =
 export const createScheduleAndSendEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { clientName, clientEmail, dateOfAppointment, timeOfAppointment, scheduleDetails} = req.body;
-    const userId = parseInt(req.params.UserID, 10);
+    const userId =req.params.UserID
   
 
     // Fetch user by ID
@@ -755,6 +758,12 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
       res.status(403).json({ error: "Forbidden" });
       return;
     }
+
+        // Check if the appointment date is in the past
+        if (dateOfAppointment < Date.now()) {
+          res.status(400).json({ error: 'Cannot schedule appointments for past dates' });
+          return;
+        }
     const FirmName = user.Username
     const ContactNumber = user.PhoneNumber
 
@@ -814,7 +823,7 @@ export const createScheduleAndSendEmail = async (req: Request, res: Response): P
 
 export const getNumberOfSchedules = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = parseInt(req.params.UserID, 10);
+    const userId = req.params.UserID
 
     // Fetch user by ID
     const user = await getUserById(userId);
@@ -840,7 +849,7 @@ export const getNumberOfSchedules = async (req: Request, res: Response): Promise
 
 export const getAllSchedules = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = parseInt(req.params.UserID, 10)
+    const userId =req.params.UserID
     const user = getUserById(userId)
     if(!user){
       res.status(400).json("failed to fetch userId")
@@ -859,7 +868,7 @@ export const getAllSchedules = async (req: Request, res: Response): Promise<void
 
 export const getAppointmentsForNext7Days = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.UserID, 10);
+    const userId =req.params.UserID
     const today = new Date();
     const next7Days = new Date(today);
     next7Days.setDate(today.getDate() + 7);
@@ -933,11 +942,11 @@ function formatDateForDisplay(dateString:String) {
 
 
 
-
+//delete a client
 export const deleteClient = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.userId, 10);
-  const clientId = parseInt(req.params.clientId, 10);
-  const caseId = parseInt(req.params.caseId, 10); // Assuming you have caseId in the URL params
+  const userId = req.params.userId
+  const clientId = req.params.clientId
+  const caseId = req.params.caseId; // Assuming you have caseId in the URL params
 
   try {
     // Check if the client exists
@@ -970,7 +979,7 @@ export const deleteClient = async (req: Request, res: Response) => {
 };
 
 export const getDeletedClients = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.userId, 10);
+  const userId = req.params.userId
 
   try {
     // Retrieve deleted clients
@@ -989,8 +998,8 @@ export const getDeletedClients = async (req: Request, res: Response) => {
 
 // Function to restore a deleted client
 export const restoreClient = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.userId, 10); // Extract userId from request params
-  const clientId = parseInt(req.params.clientId, 10); // Extract clientId from request params
+  const userId =req.params.userId // Extract userId from request params
+  const clientId = req.params.clientId // Extract clientId from request params
 
   try {
     // Check if the client exists and belongs to the user
@@ -1028,8 +1037,8 @@ export const restoreClient = async (req: Request, res: Response) => {
 
 export const deleteSchedule = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = parseInt(req.params.userId, 10)
-    const scheduleId = parseInt(req.params.scheduleId, 10); // Assuming the scheduleId is passed in the request parameters
+    const userId = req.params.userId
+    const scheduleId = req.params.scheduleId // Assuming the scheduleId is passed in the request parameters
 const user = await getUserById(userId)
 if(!user){
   res.status(404).json("failed to fetch user by Id")
@@ -1060,3 +1069,27 @@ if(!user){
   }
 };
 
+
+
+//Document upload function
+//this is to uplaod the documents for each user
+
+export const handleDocumentUpload = async (req: Request, res: Response<any, Record<string, any>>) => {
+  try {
+ 
+  //check if a file was uploaded
+  if(!req.file){
+    return res.status(400).json({error:'no file uploaded'})
+  }
+  const filename = req.file.filename
+  const originalname = req.file.originalname
+  const path = req.file.path
+
+ const content = fs.readFileSync(path)
+  } catch (error) {
+    console.error('Error uploading file', error)
+    res.status(500).json({
+      error:'Sorry, Error uploading file'
+    })
+}
+}

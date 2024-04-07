@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,16 +6,15 @@ datasource db {
   url       = env("DATABASE_URL")
 }
 
-
 // User model
 model User {
-  UserID       Int      @id @default(autoincrement())
+  UserID       String   @id @default(uuid())
   Username     String?
   Password     String
-  Email        String  @unique
+  Email        String   @unique
   PhoneNumber  String
-  Token        String  @default("")
-  isVerified   Boolean @default(false)
+  Token        String   @default("")
+  isVerified   Boolean  @default(false)
   RoleID       Int
   Role         Role[]
   Clients      Client[]
@@ -32,13 +28,12 @@ model User {
   @@map("users")
 }
 
-
 // Role model
 model Role {
-  RoleID   Int     @id @default(autoincrement())
+  RoleID   String   @id @default(uuid())
   RoleName String
-  Users    User  @relation(fields: [userId], references: [UserID])
-  userId  Int
+  Users    User     @relation(fields: [userId], references: [UserID])
+  userId   String
 
   @@unique([RoleID])
   @@map("roles")
@@ -46,20 +41,20 @@ model Role {
 
 // Client model
 model Client {
-  ClientID       Int        @id @default(autoincrement())
+  ClientID       String   @id @default(uuid())
   FirstName      String
   LastName       String
   ContactNumber  String
-  Email          String     @unique
+  Email          String   @unique
   Address        String
-  Gender         String     // Enumerated type for gender
-  isDeleted      Boolean @default(false)
-  Case           Case?      @relation(fields: [CaseID], references: [CaseID])
-  CaseID         Int?
-  User           User       @relation(fields: [userId], references: [UserID])
-  userId         Int
+  Gender         String   // Enumerated type for gender
+  isDeleted      Boolean  @default(false)
+  Case           Case?    @relation(fields: [CaseID], references: [CaseID])
+  CaseID         String
+  User           User     @relation(fields: [userId], references: [UserID])
+  userId         String
   Documents      Document[]
-  
+
   // Add opposite relation field for Schedule
   schedules      Schedule[] @relation("ClientSchedule")
   
@@ -67,19 +62,13 @@ model Client {
   @@map("clients")
 }
 
-enum Gender {
-  Male
-  Female
-}
-
-
 // Case model
 model Case {
-  CaseID          Int          @id @default(autoincrement())
+  CaseID          String   @id @default(uuid())
   CaseName        String
   CaseDescription String
-   AssignedUser    User         @relation(fields: [AssignedUserID], references: [UserID])
-  AssignedUserID  Int
+  AssignedUser    User     @relation(fields: [AssignedUserID], references: [UserID])
+  AssignedUserID  String
   Clients         Client[]  
 
   @@unique([CaseID])
@@ -88,56 +77,52 @@ model Case {
 
 // Document model
 model Document {
-  DocumentID   Int      @id @default(autoincrement())
+  DocumentID   String   @id @default(uuid())
   DocumentName String
   FilePath     String
   Content      Bytes 
   UploadDate   DateTime @default(now())
-  ClientID     Int
+  ClientID     String
   Client       Client   @relation(fields: [ClientID], references: [ClientID])
 
   @@unique([DocumentID])
   @@map("document")
 }
 
-
 // Schedule model
 model Schedule {
-  id                Int       @id @default(autoincrement())
+  id                String   @id @default(uuid())
   clientName        String
   clientEmail       String
   dateOfAppointment DateTime
   timeOfAppointment String
-  scheduleDetails String
+  scheduleDetails   String
   client            Client   @relation("ClientSchedule", fields: [clientName, clientEmail], references: [FirstName, Email])
   user              User?    @relation("UserSchedules", fields: [userId], references: [UserID])
-  userId            Int
+  userId            String
 }
 
-
-// schema.prisma
-
+// Contact model
 model Contact {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String
+  id          String  @id @default(uuid())
+  name        String
+  email       String
   companyName String
-  message   String
+  message     String
 }
-
 
 // Settings model
 model Settings {
-  settingsID         Int      @id @default(autoincrement())
-  Firmname           String
-  Email              String   @unique
-  Location           String?
-  FirmDescription    String?
-  CurrentCountry     String?
+  settingsID      String  @id @default(uuid())
+  Firmname        String
+  Email           String  @unique
+  Location        String?
+  FirmDescription String?
+  CurrentCountry  String?
   
   // Define relation to User model
-  newUser             User?    @relation("UserSettings", fields: [newUserID], references: [UserID])
-  newUserID             Int     @unique
+  newUser      User?  @relation("UserSettings", fields: [newUserID], references: [UserID])
+  newUserID    String    @unique
 
   @@map("settings")
 }
