@@ -1,0 +1,6 @@
+Schedule 
+Add new Schedule
+Get all Schedules
+Get the total Number of Schedules
+View One Schedule
+Automate emails using node-cron
