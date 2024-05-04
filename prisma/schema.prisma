@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "mongodb"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  UserID       String   @id @default(cuid()) @map("_id")
+  Username     String?
+  Password     String
+  Email        String  @unique
+  PhoneNumber  String
+  Token        String  @default("")
+  isVerified   Boolean @default(false)
+  RoleID       Int
+  Role         Role[]
+  Clients      Client[]
+  Cases        Case[]
+  
+  // Add relation to Schedule model
+  schedules    Schedule[] @relation("UserSchedules")
+  settings     Settings[] @relation("UserSettings")
+  
+  @@map("users")
+}
+
+model Role {
+  RoleID   String   @id @default(cuid()) @map("_id")
+  RoleName RoleName
+  User           User      @relation(fields: [userId], references: [UserID])
+  userId  String
+
+}
+enum RoleName{
+  ADMIN
+  User
+}
+
+model Client {
+  ClientID       String    @id @default(cuid()) @map("_id")
+  FirstName      String
+  LastName       String
+  ContactNumber  String
+  Email          String    @unique
+  Address        String
+  Gender         String
+  isDeleted      Boolean @default(false)
+  Case           Case?     @relation(fields: [CaseID], references: [CaseID])
+  CaseID         String?
+  User           User      @relation(fields: [userId], references: [UserID])
+  userId         String
+  Documents      Document[]
+  
+  // Add opposite relation field for Schedule
+  schedules      Schedule[] @relation("ClientSchedule")
+  
+  @@map("clients")
+}
+
+model Case {
+  CaseID          String   @id @default(cuid()) @map("_id")
+  CaseName        String
+  CaseDescription String
+  AssignedUser    User     @relation(fields: [AssignedUserID], references: [UserID])
+  AssignedUserID  String
+  Clients         Client[]  
+
+  @@map("cases")
+}
+
+model Document {
+  DocumentID   String   @id @default(cuid()) @map("_id")
+  DocumentName String
+  FilePath     String
+  Content      Bytes 
+  UploadDate   DateTime @default(now())
+  ClientID     String
+  Client       Client   @relation(fields: [ClientID], references: [ClientID])
+
+  @@map("document")
+}
+
+
+model Schedule {
+  id                String   @id @default(cuid()) @map("_id")
+  clientName        String
+  clientEmail       String
+  dateOfAppointment DateTime
+  timeOfAppointment String
+  scheduleDetails   String
+  client            Client   @relation("ClientSchedule", fields: [ClientID], references: [ClientID])
+  ClientID           String
+  user              User?    @relation("UserSchedules", fields: [userId], references: [UserID])
+  userId            String
+}
+
+model Contact {
+  id          String  @id @default(cuid()) @map("_id")
+  name        String
+  email       String
+  companyName String
+  message     String
+}
+
+
+model Settings {
+  settingsID         String  @id @default(cuid()) @map("_id")
+  Firmname           String
+  Email              String   @unique
+  Location           String?
+  FirmDescription    String?
+  CurrentCountry     String?
+  
+  // Define relation to User model
+  newUser            User?   @relation("UserSettings", fields: [newUserID], references: [UserID])
+  newUserID          String  @unique
+
+  @@map("settings")
+}
