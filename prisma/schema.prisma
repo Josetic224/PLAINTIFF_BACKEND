@@ -19,6 +19,7 @@ model User {
   Role         Role[]
   Clients      Client[]
   Cases        Case[]
+  oauthUser OAuthUser []
   
   // Add relation to Schedule model
   schedules    Schedule[] @relation("UserSchedules")
@@ -26,6 +27,17 @@ model User {
   
   @@map("users")
 }
+enum OAuthProvider {
+  GOOGLE
+}
+model OAuthUser {
+  id       String   @id @default(cuid()) @map("_id")
+  oauthId  String
+  user     User     @relation(fields: [oauthId], references: [UserID])
+  provider OAuthProvider
+ 
+}
+
 
 model Role {
   RoleID   String   @id @default(cuid()) @map("_id")

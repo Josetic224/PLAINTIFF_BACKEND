@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// User model
+model User {
+  UserID     Int      @id @default(autoincrement())
+  Username   String
+  Password   String
+  Email      String
+  RoleID     Int
+  Role       Role[]
+  Clients    Client[]
+  Cases     Case[]
+
+  @@unique([UserID])
+  @@map("users")
+}
+
+// Role model
+model Role {
+  RoleID   Int     @id @default(autoincrement())
+  RoleName String
+  Users    User  @relation(fields: [userId], references: [UserID])
+  userId  Int
+
+  @@unique([RoleID])
+  @@map("roles")
+}
+
+// Client model
+model Client {
+  ClientID        Int        @id @default(autoincrement())
+  FirstName       String
+  LastName        String
+  ContactNumber   String
+  Email           String
+  Address         String
+  Case            Case?      @relation(fields: [CaseID], references: [CaseID])
+  CaseID          Int?
+  User            User       @relation( fields: [userId], references: [UserID])
+  userId  Int
+  Documents       Document[]
+  Communications  Communication[]
+
+  @@unique([ClientID])
+  @@map("clients")
+}
+
+// Case model
+model Case {
+  CaseID          Int          @id @default(autoincrement())
+  CaseName        String
+  CaseDescription String
+  CaseStatus      String
+  AssignedUserID  Int
+  AssignedUser    User         @relation(fields: [AssignedUserID], references: [UserID])
+  Clients         Client[]  
+
+  @@unique([CaseID])
+  @@map("cases")
+}
+
+// Document model
+model Document {
+  DocumentID   Int      @id @default(autoincrement())
+  DocumentName String
+  FilePath     String
+  UploadDate   DateTime @default(now())
+  ClientID     Int
+  Client       Client   @relation(fields: [ClientID], references: [ClientID])
+
+  @@unique([DocumentID])
+  @@map("document")
+}
+
+// Communication model
+model Communication {
+  CommunicationID  Int      @id @default(autoincrement())
+  CommunicationType String
+  CommunicationDate DateTime @default(now())
+  Description      String
+  ClientID         Int
+  Client           Client   @relation(fields: [ClientID], references: [ClientID])
+
+  @@unique([CommunicationID])
+  @@map("communication")
+}
+
