@@ -2,6 +2,8 @@ import express, { NextFunction, Request, Response } from "express";
 import { Case, Client, Prisma, PrismaClient, Schedule, User } from '@prisma/client';
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
+import { Strategy as GoogleStrategy, Profile } from "passport-google-oauth20";
+import passport from"passport"
 
 dotenv.config({ path: ".env" });
 const prisma = new PrismaClient();
@@ -26,7 +28,8 @@ import {
   getClientByCaseId,
   getClientByFirstname,
   getAClient,
-  checkClientExists
+  checkClientExists,
+  uploadDocument
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -37,6 +40,7 @@ import { generateDynamicEmail } from "../middleware/html";
 import { generateEmailTemplate } from "../Appointment";
 import { JWT_SECRET } from "../config/secrets";
 import { resetEmail } from "../middleware/resetEmail";
+import { log } from "console";
 
 
 
@@ -223,6 +227,7 @@ if(!checkPassword){
     return res.status(500).json({ status: false, message:err.message});
   }
 };
+
 
 //write the function for forgot Password
 export const forgotPassword = async (req: Request, res: Response) => {
@@ -1061,3 +1066,30 @@ if(!user){
   }
 };
 
+
+//add a document 
+export const addClientDocument = async(req:Request, res:Response): Promise<void> =>{
+  try {
+    const {clientId, userId} = req.params
+    const files:any = req.files
+    
+  const getUser = await getUserById(userId)
+    if(!getUser){
+      res.status(401).json("user not found")
+      return;
+    }
+
+    const uploadedDocuments = await Promise.all(files.map(async (file:any) => {
+      const document = {
+        name: file.originalname,
+        path: file.path,
+      };
+           // Call uploadDocument function for each file
+           return await uploadDocument(clientId, document, userId);
+    }));
+
+    res.status(200).json({ message: 'Documents uploaded successfully', documents: uploadedDocuments });
+  } catch (error:any) {
+    res.status(500).json({error:error.message})
+  }
+}

@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { hashSync, compareSync } from "bcrypt";
 import { sign, verify } from "jsonwebtoken";
 import dotenv from "dotenv";
+import { error } from "console";
 
 dotenv.config({ path: ".env" });
 
@@ -68,13 +69,22 @@ export const createUser = async (
     const jwtSecret = process.env.JWT_SECRET || "pgiir7dkuciylf"; // Providing a default value if JWT_SECRET is undefined
     const token = sign({ FirmName, email }, jwtSecret, { expiresIn: "1h" });
 
+    const userRole = await prisma.role.findUnique({where:{RoleName:"USER"}})
+    if(!userRole){
+      throw new Error ("Default role not found")
+    }
+
     const newUser = await prisma.user.create({
       data: {
         Username: FirmName,
         Email: email.toLocaleLowerCase(),
         Password: hashedPassword,
         PhoneNumber: PhoneNumber,
-        RoleID: 1,
+       Roles:{
+        connect:{
+          RoleID : userRole.RoleID
+        }
+       },
         Token: token,
       },
     });
@@ -492,3 +502,32 @@ export const updateSettings = async (
     throw error;
   }
 };
+
+
+export const uploadDocument = async(
+  clientId : string,
+  document: any,
+  userId: string
+) =>{
+  try {
+    const client = await prisma.client.findUnique({where:{ClientID:clientId}})
+    if(!client){
+      throw new Error ("No client Found")
+    }
+    if(client.userId != userId){
+      throw new Error("Unauthorized User!")
+    }
+
+    const uploadedDocument = await prisma.document.create({
+      data:{
+       DocumentName:document.name,
+       FilePath:document.path,
+       ClientID:clientId
+      },
+    })
+    return uploadedDocument;
+  } catch (error) {
+   console.error(`error uploading Documents`, error) 
+   throw error;
+  }
+}

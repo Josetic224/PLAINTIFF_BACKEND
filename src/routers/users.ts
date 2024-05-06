@@ -4,7 +4,7 @@ import multer from 'multer';
 const storage = multer.memoryStorage();
 
 // Initialize multer with the storage settings
-const upload = multer({ storage: storage });
+const upload = multer({dest: './uploads/' });
 // import upload from "../config/multer.config";
 import {
   getAllUsersController,
@@ -31,6 +31,7 @@ import {
   resetPassword,
   forgotPassword,
   deleteSchedule,
+  addClientDocument,
   
   // deleteUser,
   // senAppointmentReminders,
@@ -82,6 +83,7 @@ router.put("/reset-password", resetPassword);
       res.status(500).json({ error: 'Error updating settings' });
     }
   });
+ router.post('/upload/:clientId/:userId', upload.array("file"), addClientDocument)
 }  
 
 

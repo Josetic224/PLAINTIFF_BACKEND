@@ -8,47 +8,46 @@ datasource db {
 }
 
 model User {
-  UserID       String   @id @default(cuid()) @map("_id")
-  Username     String?
-  Password     String
-  Email        String  @unique
-  PhoneNumber  String
-  Token        String  @default("")
-  isVerified   Boolean @default(false)
-  RoleID       Int
-  Role         Role[]
-  Clients      Client[]
-  Cases        Case[]
-  oauthUser OAuthUser []
-  
-  // Add relation to Schedule model
-  schedules    Schedule[] @relation("UserSchedules")
-  settings     Settings[] @relation("UserSettings")
-  
-  @@map("users")
+UserID String @id @default(cuid()) @map("_id")
+Username String?
+Password String
+Email String @unique
+PhoneNumber String
+Token String @default("")
+isVerified Boolean @default(false)
+Roles Role[]
+Clients Client[]
+Cases Case[]
+passport Passport[] 
+// Add relation to Schedule model
+schedules Schedule[] @relation("UserSchedules")
+settings Settings[] @relation("UserSettings")
+@@map("users")
 }
-enum OAuthProvider {
-  GOOGLE
-}
-model OAuthUser {
-  id       String   @id @default(cuid()) @map("_id")
-  oauthId  String
-  user     User     @relation(fields: [oauthId], references: [UserID])
-  provider OAuthProvider
- 
+
+model Passport {
+id String @id @default(cuid()) @map("_id")
+user User @relation(fields: [id], references: [UserID])
+identifier String
+token String
+expires DateTime
 }
 
 
+
+
+// Role model
 model Role {
   RoleID   String   @id @default(cuid()) @map("_id")
-  RoleName RoleName
-  User           User      @relation(fields: [userId], references: [UserID])
-  userId  String
-
+  RoleName RoleName @unique
+  Users    User @relation(fields: [RoleID], references: [UserID])
+  
+  @@map("roles")
 }
+
 enum RoleName{
   ADMIN
-  User
+  USER
 }
 
 model Client {
@@ -86,8 +85,7 @@ model Case {
 model Document {
   DocumentID   String   @id @default(cuid()) @map("_id")
   DocumentName String
-  FilePath     String
-  Content      Bytes 
+  FilePath     String 
   UploadDate   DateTime @default(now())
   ClientID     String
   Client       Client   @relation(fields: [ClientID], references: [ClientID])
