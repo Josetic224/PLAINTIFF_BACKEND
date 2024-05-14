@@ -12,16 +12,16 @@ UserID String @id @default(cuid()) @map("_id")
 Username String?
 Password String
 Email String @unique
-PhoneNumber String
+PhoneNumber String?
 Token String @default("")
 isVerified Boolean @default(false)
-Roles Role[]
 Clients Client[]
 Cases Case[]
 passport Passport[] 
 // Add relation to Schedule model
 schedules Schedule[] @relation("UserSchedules")
 settings Settings[] @relation("UserSettings")
+payment  Payment[]
 @@map("users")
 }
 
@@ -36,19 +36,8 @@ expires DateTime
 
 
 
-// Role model
-model Role {
-  RoleID   String   @id @default(cuid()) @map("_id")
-  RoleName RoleName @unique
-  Users    User @relation(fields: [RoleID], references: [UserID])
-  
-  @@map("roles")
-}
 
-enum RoleName{
-  ADMIN
-  USER
-}
+
 
 model Client {
   ClientID       String    @id @default(cuid()) @map("_id")
@@ -119,14 +108,26 @@ model Contact {
 model Settings {
   settingsID         String  @id @default(cuid()) @map("_id")
   Firmname           String
-  Email              String   @unique
+  Email              String @unique
   Location           String?
   FirmDescription    String?
   CurrentCountry     String?
+  PhoneNumber        String?
   
   // Define relation to User model
   newUser            User?   @relation("UserSettings", fields: [newUserID], references: [UserID])
-  newUserID          String  @unique
+  newUserID          String  
 
   @@map("settings")
+}
+model Payment {
+  PaymentID   String   @id @default(cuid()) @map("_id")
+  Amount      Float
+  Currency    String
+  Status      String
+  PaymentDate DateTime @default(now())
+  UserID      String
+  User        User     @relation(fields: [UserID], references: [UserID])
+  
+  @@map("payments")
 }

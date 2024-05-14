@@ -3,3 +3,4 @@ Add new Schedule
 Get all Schedules
 Get the total Number of Schedules
 View One Schedule
+NO 2 document of the same type should be uploaded

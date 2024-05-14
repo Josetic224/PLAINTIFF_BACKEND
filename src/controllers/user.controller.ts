@@ -4,6 +4,20 @@ import nodemailer from "nodemailer"
 import dotenv from "dotenv";
 import { Strategy as GoogleStrategy, Profile } from "passport-google-oauth20";
 import passport from"passport"
+import { UploadedFile } from 'express-fileupload';
+
+
+import {v2 as cloudinary} from 'cloudinary';
+dotenv.config({path:".env"})
+
+cloudinary.config({ 
+  cloud_name: process.env.CLOUD_NAME, 
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET
+});
+
+
+
 
 dotenv.config({ path: ".env" });
 const prisma = new PrismaClient();
@@ -29,7 +43,10 @@ import {
   getClientByFirstname,
   getAClient,
   checkClientExists,
-  uploadDocument
+  uploadDocument,
+  getAllDocuments,
+  createSettings,
+  updateSettings
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -1068,28 +1085,139 @@ if(!user){
 
 
 //add a document 
-export const addClientDocument = async(req:Request, res:Response): Promise<void> =>{
+
+
+
+
+export const addClientDocument = async (req: Request, res: Response): Promise<void> => {
   try {
-    const {clientId, userId} = req.params
-    const files:any = req.files
-    
-  const getUser = await getUserById(userId)
-    if(!getUser){
-      res.status(401).json("user not found")
+    const { clientId, userId } = req.params;
+    const files = req.files as unknown as { [fieldname: string]: UploadedFile[] }; // Type assertion
+
+    if (!files || Object.keys(files).length === 0) {
+      res.status(400).json("No files provided");
       return;
     }
 
-    const uploadedDocuments = await Promise.all(files.map(async (file:any) => {
-      const document = {
-        name: file.originalname,
-        path: file.path,
-      };
-           // Call uploadDocument function for each file
-           return await uploadDocument(clientId, document, userId);
-    }));
+    const getUser = await getUserById(userId);
+    if (!getUser) {
+      res.status(401).json("User not found");
+      return;
+    }
+
+    const uploadedDocuments: any[] = [];
+
+    // Iterate over each field name in req.files
+    for (const fieldName in files) {
+      if (Object.prototype.hasOwnProperty.call(files, fieldName)) {
+        const file = files[fieldName]; // Get the file(s) for this field name
+
+        // If there's only one file, convert it to an array to unify handling
+        const fileList = Array.isArray(file) ? file : [file];
+
+        // Process each file in the fileList
+        for (const singleFile of fileList) {
+          const result = await cloudinary.uploader.upload(singleFile.tempFilePath, {
+            public_id: `${Date.now()}`,
+            resource_type: "auto"
+          });
+
+          const document = {
+            name: singleFile.name,
+            path: result.secure_url
+          };
+
+          const uploadedDocument = await uploadDocument(clientId, document, userId);
+          uploadedDocuments.push(uploadedDocument);
+        }
+      }
+    }
 
     res.status(200).json({ message: 'Documents uploaded successfully', documents: uploadedDocuments });
-  } catch (error:any) {
-    res.status(500).json({error:error.message})
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export const getClientDocuments = async(req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, clientId } = req.params;
+
+    // Check if user exists
+    const getUser = await getUserById(userId);
+    if (!getUser) {
+      res.status(401).json("User not found");
+      return;
+    }
+
+    // Get all documents for the client
+    const documents = await getAllDocuments(clientId, userId);
+
+    // Send the documents as a response
+    res.status(200).json(documents);
+  } catch (error: any) {
+    // Handle any errors
+    console.error(`Error getting documents: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+}
+export const getClientDocument = async(req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId, clientId } = req.params;
+
+    // Check if user exists
+    const getUser = await getUserById(userId);
+    if (!getUser) {
+      res.status(401).json("User not found");
+      return;
+    }
+
+    // Get all documents for the client
+    const documents = await getAllDocuments(clientId, userId);
+
+    // Send the documents as a response
+    res.status(200).json(documents);
+  } catch (error: any) {
+    // Handle any errors
+    console.error(`Error getting documents: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const createUserSettings = async (req: Request, res: Response) => {
+  const userId = req.params.userId; // Extract userId from request params
+  const settingsData = req.body; // Extract settings data from request body
+
+  try {
+    const result = await createSettings(userId, settingsData); // Call updateSettings function
+    res.status(200).json(result); // Send success response with updated user settings
+  } catch (error) {
+    console.error('Error creating user settings:', error);
+    res.status(500).json({ error: 'Error creating user settings' }); // Send error response
+  }
+};
+
+export const handleupdateUserSettings = async(req:Request, res:Response)=>{
+  const userId:any = req.params.userId;
+  const settingsData = req.body;
+
+  try {
+
+    const getUser = await getUserById(userId)
+    if(!getUser){
+      res.status(401).json("user not Found")
+      return;
+    }
+
+    const result = await updateSettings(userId, settingsData)
+
+    res.status(200).json({
+  message:"success",
+  data:result
+})
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({error:"Error updating user settings"})
+    
   }
 }

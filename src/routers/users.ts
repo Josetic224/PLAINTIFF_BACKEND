@@ -32,6 +32,9 @@ import {
   forgotPassword,
   deleteSchedule,
   addClientDocument,
+  getClientDocuments,
+  createUserSettings,
+  handleupdateUserSettings,
   
   // deleteUser,
   // senAppointmentReminders,
@@ -39,7 +42,6 @@ import {
 } from "../controllers/user.controller";
 
 import { validateUserLogin, validateUserRegistration } from "../validator/validator";
-import { createClientManually, updateSettings } from "../db/users.db";
 
 // import { updateUser } from "../db/users.db";
 
@@ -71,19 +73,10 @@ router.put("/reset-password", resetPassword);
   router.get('/client/deleted-clients/:userId', getDeletedClients);
   router.put("/client/restore/:userId/:clientId", restoreClient)
   router.delete("/schedule/delete/:userId/:scheduleId", deleteSchedule)
-  router.put('/users/settings/:userId', async (req: Request, res: Response) => {
-    const userId = req.params.userId;
-    const settingsData = req.body;
-  
-    try {
-      const result = await updateSettings(userId, settingsData);
-      res.status(200).json(result);
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      res.status(500).json({ error: 'Error updating settings' });
-    }
-  });
- router.post('/upload/:clientId/:userId', upload.array("file"), addClientDocument)
+  router.post('/createsettings/:userId',createUserSettings)
+  router.put('/updatesettings/:userId', handleupdateUserSettings)
+ router.post('/upload_Document/:clientId/:userId', addClientDocument)
+ router.get('/all_Documents/:clientId/:userId', getClientDocuments)
 }  
 
 

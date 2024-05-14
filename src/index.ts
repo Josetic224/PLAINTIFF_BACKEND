@@ -4,8 +4,10 @@ import routers from "./routers";
 import helmet from "helmet";
 import cors from "cors"
 import { connectToDatabase, prisma } from "./db/users.db";
-
+import fileUpload from "express-fileupload"
 const app: Application = express();
+
+app.use(fileUpload({useTempFiles:true}))
 
 
 async function startApp() {

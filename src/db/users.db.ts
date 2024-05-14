@@ -1,8 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient,} from "@prisma/client";
 import { hashSync, compareSync } from "bcrypt";
 import { sign, verify } from "jsonwebtoken";
 import dotenv from "dotenv";
-import { error } from "console";
+import { log } from "console";
+
 
 dotenv.config({ path: ".env" });
 
@@ -57,7 +58,6 @@ export const getUserById = async (userId:string) => {
     throw new Error("Failed to fetch user by ID.");
   }
 };
-
 export const createUser = async (
   FirmName: string,
   password: string,
@@ -69,10 +69,6 @@ export const createUser = async (
     const jwtSecret = process.env.JWT_SECRET || "pgiir7dkuciylf"; // Providing a default value if JWT_SECRET is undefined
     const token = sign({ FirmName, email }, jwtSecret, { expiresIn: "1h" });
 
-    const userRole = await prisma.role.findUnique({where:{RoleName:"USER"}})
-    if(!userRole){
-      throw new Error ("Default role not found")
-    }
 
     const newUser = await prisma.user.create({
       data: {
@@ -80,11 +76,6 @@ export const createUser = async (
         Email: email.toLocaleLowerCase(),
         Password: hashedPassword,
         PhoneNumber: PhoneNumber,
-       Roles:{
-        connect:{
-          RoleID : userRole.RoleID
-        }
-       },
         Token: token,
       },
     });
@@ -95,6 +86,7 @@ export const createUser = async (
     throw new Error("Failed to create user.");
   }
 };
+
 
 export const comparePassword = async (
   password: string,
@@ -450,16 +442,17 @@ export const checkClientExists = async (
 };
 
 interface Settings {
-  settingsID: string;
+  settingsID?: string
   Firmname: string;
   Email: string;
-  Location: string | null;
-  FirmDescription: string | null;
-  CurrentCountry: string | null;
-  // Add any other properties here
+  Location: string;
+  FirmDescription: string ;
+  CurrentCountry: string;
+  PhoneNumber:string;
 }
 
-export const updateSettings = async (
+// 
+export const createSettings = async (
   userId: string,
   settingsData: Settings
 ) => {
@@ -475,34 +468,76 @@ export const updateSettings = async (
     }
 
     const settings: Settings = user.settings as unknown as Settings;
-
-    // Update Username and Email fields of User
-    const updatedUser = await prisma.user.update({
+     // Fetch the updated user
+     const updatedUser = await prisma.user.update({
       where: { UserID: userId },
       data: {
         Username: settingsData.Firmname || user.Username,
         Email: settingsData.Email || user.Email,
+        PhoneNumber:settingsData.PhoneNumber || user.PhoneNumber
       },
     });
 
-    // Save other settings
-    const updatedSettings = await prisma.settings.update({
-      where: { settingsID: settings.settingsID },
+    const updatedSettings = await prisma.settings.create({
       data: {
+        // Assuming newUserID is required and userId corresponds to the new settings
+        Firmname: settingsData.Firmname ?? user.Username,
+        Email: settingsData.Email ?? user.Email,
+        newUserID: userId,
         Location: settingsData.Location || settings.Location,
-        FirmDescription:
-          settingsData.FirmDescription || settings.FirmDescription,
+        FirmDescription: settingsData.FirmDescription || settings.FirmDescription,
         CurrentCountry: settingsData.CurrentCountry || settings.CurrentCountry,
+        PhoneNumber:settingsData.PhoneNumber || settings.PhoneNumber
       },
     });
 
-    return { user: updatedUser, settings: updatedSettings };
+    
+ return { user: updatedUser, settings: { ...updatedSettings } };
   } catch (error) {
-    console.error("Error updating settings:", error);
+    console.error("Error creating settings:", error);
     throw error;
   }
 };
 
+
+export const updateSettings = async (
+  userId:string,
+  settingsData:Settings
+)=>{
+
+  try {
+
+       const user = await prisma.user.findUnique({
+      where: { UserID: userId },
+      include: { settings: true },
+    });
+    const userSettings = await prisma.settings.findFirst({
+      where:{newUserID:userId}
+    })
+    if(!userSettings){
+      throw new Error ("settings not found for this User")
+    }
+    //if found then update settings
+
+    const updatedSettings = await prisma.settings.update({
+      where:{settingsID:userSettings.settingsID},
+      data:{
+        Firmname:settingsData.Firmname || userSettings.Firmname,
+        Email:settingsData.Email || userSettings.Email,
+        Location:settingsData.Location || userSettings.Location,
+        FirmDescription:settingsData.FirmDescription || userSettings.FirmDescription,
+        CurrentCountry:settingsData.CurrentCountry || userSettings.CurrentCountry,
+        PhoneNumber:settingsData.PhoneNumber || userSettings.PhoneNumber
+
+      }
+
+    })
+    return updatedSettings;
+  } catch (error) {
+    console.error("error updating settings", error)
+    throw error
+  }
+}
 
 export const uploadDocument = async(
   clientId : string,
@@ -531,3 +566,83 @@ export const uploadDocument = async(
    throw error;
   }
 }
+
+export const getAllDocuments = async(clientId:string,userId:string)=>{
+  try {
+   const client = await prisma.client.findUnique({where:{ClientID:clientId}})
+   if(!client || Object.keys(client).length===0){
+    throw new Error ("no client Found")
+   }
+   if(client.userId !== userId){
+    throw new Error ("UnAuthorized User")
+   }
+   const Documents = await prisma.document.findMany({
+    where:{
+      ClientID:clientId,
+    }
+   })
+   return Documents;
+  } catch (error) {
+    console.error(`error getting Document`)
+    throw error
+  }
+
+}
+
+export const getOneDocument = async(clientId:string,userId:string)=>{
+  try {
+   const client = await prisma.client.findUnique({where:{ClientID:clientId}})
+   if(!client || Object.keys(client).length===0){
+    throw new Error ("no client Found")
+   }
+   if(client.userId !== userId){
+    throw new Error ("UnAuthorized User")
+   }
+   const Documents = await prisma.document.findFirst({
+    where:{
+      ClientID:clientId,
+    }
+   })
+   return Documents;
+  } catch (error) {
+    console.error(`error getting Document`)
+    throw error
+  }
+
+}
+
+
+export const getDocumentbyName = async (clientId: string, userId: string, documentName?: string) => {
+  try {
+    const client = await prisma.client.findUnique({ where: { ClientID: clientId } });
+    if (!client || Object.keys(client).length === 0) {
+      throw new Error("No client found");
+    }
+    if (client.userId !== userId) {
+      throw new Error("Unauthorized user");
+    }
+
+    let whereClause = { ClientID: clientId };
+    if (documentName) {
+      // Filter documents by name if provided
+      const documents = await prisma.document.findMany({
+        where: {
+          ClientID: clientId,
+          DocumentName: documentName
+        }
+      });
+      return documents;
+    }
+
+    const documents = await prisma.document.findMany({
+      where: { ClientID: clientId }
+    });
+
+    return documents;
+  } catch (error) {
+    console.error("Error getting documents:", error);
+    throw error;
+  }
+}
+
+
