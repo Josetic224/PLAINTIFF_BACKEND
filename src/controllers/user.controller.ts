@@ -621,6 +621,12 @@ export const createClientController = async (req: Request, res: Response) => {
    res.status(400).json({ error: "Email field is empty or contains invalid characters" });
    return;
   }
+  const getUserByEmail= await prisma.user.findUnique({where:{Email:email}})
+
+    if(getUserByEmail){
+      res.status(401).json("Please enter a Unique Email")
+      return;
+    }
 
   // Validate address
   if (!address || typeof address !== 'string') {
