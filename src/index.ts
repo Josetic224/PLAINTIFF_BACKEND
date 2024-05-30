@@ -27,8 +27,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 const corsOptions = {
-  origin: 'https://plaintiffaid.vercel.app/#/', // Replace with your allowed origin
-  methods: ['GET', 'POST'], // Allowed HTTP methods
+  origin: 'https://plaintiffaid.vercel.app', // Replace with your allowed origin
+  methods: ['GET', 'POST','PUT','DELETE',], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
   exposedHeaders: ['Content-Length'], // Exposed headers
   credentials: true, // Allow credentials (cookies)
