@@ -6,6 +6,7 @@ import passport from"passport"
 import path from "path";
 import { Readable } from "stream";
 import fs from "fs"
+import crypto from "crypto"
 
 import multer from 'multer'
 
@@ -50,7 +51,8 @@ import {
   createSettings,
   updateSettings,
   contactCompany,
-  getOneDocument
+  getOneDocument,
+  updateUserOTP
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -63,6 +65,7 @@ import { JWT_SECRET } from "../config/secrets";
 import { resetEmail } from "../middleware/resetEmail";
 import { error, log } from "console";
 import { fsync } from "fs";
+import { sendOTPEmail } from "../middleware/otp";
 
 
 
@@ -80,7 +83,7 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password, confirmPassword, PhoneNumber, FirmName } = req.body;
-
+console.log(req.body)
   try {
     if (!email || !password || !FirmName || !PhoneNumber) {
       res.status(400).json("one or more input fields are empty")
@@ -113,7 +116,10 @@ export const signUp = async (req: Request, res: Response) => {
     })
 
     // Send a response indicating success
-    return res.status(200).json(user);
+    return res.status(200).json({
+      message:"Signup Successful please click the link sent to your Email to verify your account!",
+      user
+    });
   } catch (err: any) {
     // Handle errors
     console.error(err);
@@ -221,10 +227,75 @@ export const signIn = async (req: Request, res: Response) => {
     if (!existingUser) {
       throw new Error(`User ${email} does not exist`);
     }
-const checkPassword = await comparePassword(password, existingUser.Password)
-if(!checkPassword){
-  return res.status(400).json("Incorrect password")
-}
+
+    if(existingUser.isVerified == false){
+      res.status(403).json({
+        message:"This user is not Verified. please click the Link sent to your Email to verify your account!"
+      })
+      return;
+    }
+
+    const checkPassword = await comparePassword(password, existingUser.Password);
+    if (!checkPassword) {
+      return res.status(400).json("Incorrect password");
+    }
+
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+
+    // Update user with OTP and expiry time
+    await updateUserOTP(existingUser.UserID, otp, otpExpiresAt);
+
+    // Send OTP to user's email
+            sendOTPEmail(otp, existingUser.Username);
+    sendEmail({
+      email: existingUser.Email,
+      html:  sendOTPEmail(otp, existingUser.Username),
+      subject: "OTP"
+    });
+
+    console.log(sendOTPEmail)
+
+    res.status(200).json({
+      message: 'OTP sent to your email. Please verify to continue.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ status: false, message: err.message });
+  }
+};
+
+
+export const verifyOTP = async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+
+  try {
+    const existingUser = await getUserByEmail(email);
+    if (!existingUser) {
+      console.log(`User ${email} does not exist`);
+      return res.status(404).json({ message: `User ${email} does not exist` });
+    }
+
+    const currentTime = new Date();
+    console.log(`User: ${existingUser.Email}, Stored OTP: ${existingUser.OTP}, Provided OTP: ${otp}, OTP Expires At: ${existingUser.OTPExpiresAt}, Current Time: ${currentTime}`);
+
+    // Check if OTP is correct and not expired
+    if (!existingUser.OTP || !existingUser.OTPExpiresAt || existingUser.OTP !== otp || existingUser.OTPExpiresAt < currentTime) {
+      // Generate a new OTP
+      const newOtp = crypto.randomInt(100000, 999999).toString();
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+
+      // Update user with new OTP and expiry time
+      await updateUserOTP(existingUser.UserID, newOtp, otpExpiresAt);
+      console.log(`Generated new OTP: ${newOtp} for user: ${email}`);
+      await sendOTPEmail(existingUser.Email, newOtp);
+
+      return res.status(400).json("Invalid or expired OTP. A new OTP has been sent to your email.");
+    }
+
+    // Clear OTP and expiry time
+    await updateUserOTP(existingUser.UserID, null, null);
+
     // Create a token for the logged-in user
     const token = await createNewToken({ email: existingUser.Email, id: existingUser.UserID });
 
@@ -232,21 +303,19 @@ if(!checkPassword){
     existingUser.Token = token;
 
     // Update the user record in the database with the new token
-    await updateUserToken(existingUser.UserID, token)
+    await updateUserToken(existingUser.UserID, token);
 
-    if (existingUser.isVerified === true) {
-      res.status(200).json({
-        message: `welcome!, ${existingUser.Username}`,
+    if (existingUser.isVerified) {
+      return res.status(200).json({
+        message: `Welcome, ${existingUser.Username}!`,
         data: existingUser,
-      })
-
+      });
+    } else {
+      return res.status(400).json("Sorry, you are not verified yet! Check email for verification link.");
     }
-    else {
-      res.status(400).json("sorry, you are not verified yet!. check email for verification link")
-    }
-
-  } catch (err:any) {
-    return res.status(500).json({ status: false, message:err.message});
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ status: false, message: err.message });
   }
 };
 

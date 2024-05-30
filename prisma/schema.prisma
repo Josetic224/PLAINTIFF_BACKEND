@@ -8,21 +8,22 @@ datasource db {
 }
 
 model User {
-UserID String @id @default(cuid()) @map("_id")
-Username String?
-Password String
-Email String @unique
-PhoneNumber String?
-Token String @default("")
-isVerified Boolean @default(false)
-Clients Client[]
-Cases Case[]
-passport Passport[] 
-// Add relation to Schedule model
-schedules Schedule[] @relation("UserSchedules")
-settings Settings[] @relation("UserSettings")
-payment  Payment[]
-@@map("users")
+  UserID       String     @id @default(cuid()) @map("_id")
+  Username     String?
+  Password     String
+  Email        String     @unique
+  PhoneNumber  String?
+  Token        String     @default("")
+  isVerified   Boolean    @default(false)
+  OTP          String?
+  OTPExpiresAt DateTime?
+  Clients      Client[]
+  Cases        Case[]
+  passport     Passport[] 
+  schedules    Schedule[] @relation("UserSchedules")
+  settings     Settings[] @relation("UserSettings")
+  payment      Payment[]
+  @@map("users")
 }
 
 model Passport {

@@ -41,6 +41,7 @@ import {
   getClientDocumentByName,
   createUserSettings,
   handleupdateUserSettings,
+  verifyOTP,
 
   
   // deleteUser,
@@ -57,6 +58,7 @@ export default (router: express.Router) => {
 
   router.post("/signup",validateUserRegistration,signUp);
   router.post("/login", validateUserLogin, signIn);
+  router.post('/verify-otp', verifyOTP);
   // Route for verifying email
 router.get("/verify/:Token",verifyEmail)
 router.post('/forgot-password', forgotPassword);

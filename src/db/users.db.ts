@@ -76,7 +76,7 @@ export const createUser = async (
         Email: email.toLocaleLowerCase(),
         Password: hashedPassword,
         PhoneNumber: PhoneNumber,
-        Token: token,
+        Token: token
       },
     });
 
@@ -85,6 +85,18 @@ export const createUser = async (
     console.error("Error creating user:", error);
     throw new Error("Failed to create user.");
   }
+};
+
+export const updateUserOTP = async (userId: string, otp: string | null, otpExpiresAt: Date | null) => {
+  let hashedOTP: string | null = null;
+  if(otp){
+    hashedOTP =  hashSync(otp, 10)
+  }
+  
+  return prisma.user.update({
+    where: { UserID: userId },
+    data: { OTP: hashedOTP, OTPExpiresAt: otpExpiresAt },
+  });
 };
 
 
@@ -472,7 +484,7 @@ export const createSettings = async (
       throw new Error("User or settings not found");
     }
 
-    
+
     const settings: Settings = user.settings as unknown as Settings;
     
      // Fetch the updated user

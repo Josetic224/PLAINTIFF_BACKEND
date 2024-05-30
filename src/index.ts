@@ -27,12 +27,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 
-const allowedOrigin = 'https://plaintiffaid.vercel.app';
-app.use(cors({
-  origin: allowedOrigin,
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-}));
+
+app.use(cors);
 
 
 
