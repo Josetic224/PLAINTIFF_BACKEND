@@ -76,8 +76,8 @@ model Document {
   DocumentName String
   FilePath     String 
   UploadDate   DateTime @default(now())
-  ClientID     String
-  Client       Client   @relation(fields: [ClientID], references: [ClientID])
+  ClientID     String?
+  Client       Client ?  @relation(fields: [ClientID], references: [ClientID])
 
   @@map("document")
 }

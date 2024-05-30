@@ -1,10 +1,14 @@
 import express, { Request, Response } from "express";
 import multer from 'multer';
 // Define storage settings for multer
+// Multer storage configuration
 const storage = multer.memoryStorage();
 
 // Initialize multer with the storage settings
-const upload = multer({dest: './uploads/' });
+const upload = multer({ storage: storage });
+
+// Multer upload configuration
+
 // import upload from "../config/multer.config";
 import {
   getAllUsersController,
@@ -17,7 +21,7 @@ import {
   createClientController,
   ClientBatchUpload,
   Allclients,
-  clientByFirstname,
+  clientById,
   clientByLastname,
   updateClient,
   Totalclients,
@@ -31,10 +35,13 @@ import {
   resetPassword,
   forgotPassword,
   deleteSchedule,
-  addClientDocument,
+  // addClientDocument,
   getClientDocuments,
+  clientuploadDocument,
+  getClientDocumentByName,
   createUserSettings,
   handleupdateUserSettings,
+
   
   // deleteUser,
   // senAppointmentReminders,
@@ -59,9 +66,9 @@ router.put("/reset-password", resetPassword);
   router.get("/signout/:UserID/:Token", signOut)
   router.get("/download-template/:UserID", downloadTemplateController)
   router.post("/batch_Upload/:UserID/:AssignedUserID",upload.single("file"),ClientBatchUpload)
-  router.post('/save_client/:UserID',createClientController)
-  router.get("/getClients/:UserID",Allclients)
-  router.get("/getClients/firstname/:UserID", clientByFirstname)
+  router.post('/save_client/:UserID',upload.array('file'),createClientController)
+  router.get("/get_Clients/:UserID",Allclients)
+  router.get("/get_Client/:userID/:clientID", clientById)
   router.get("/getClients/lastname/:UserID", clientByLastname)
   router.put("/update_client/:UserID/:clientId", updateClient);
   router.get("/total_clients/:UserID", Totalclients)
@@ -73,10 +80,12 @@ router.put("/reset-password", resetPassword);
   router.get('/client/deleted-clients/:userId', getDeletedClients);
   router.put("/client/restore/:userId/:clientId", restoreClient)
   router.delete("/schedule/delete/:userId/:scheduleId", deleteSchedule)
-  router.post('/createsettings/:userId',createUserSettings)
-  router.put('/updatesettings/:userId', handleupdateUserSettings)
- router.post('/upload_Document/:clientId/:userId', addClientDocument)
- router.get('/all_Documents/:clientId/:userId', getClientDocuments)
+ router.post('/upload_Document/:userId/:clientId', upload.array("file"),clientuploadDocument)
+ router.get('/all_Documents/:userId/:clientId', getClientDocuments)
+ router.get('/one_Document/:userId/:clientId', getClientDocumentByName )
+ router.post('/settings/:userId', createUserSettings)
+ router.put('/update_settings/:userId', handleupdateUserSettings)
+
 }  
 
 

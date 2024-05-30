@@ -4,10 +4,8 @@ import routers from "./routers";
 import helmet from "helmet";
 import cors from "cors"
 import { connectToDatabase, prisma } from "./db/users.db";
-import fileUpload from "express-fileupload"
 const app: Application = express();
 
-app.use(fileUpload({useTempFiles:true}))
 
 
 async function startApp() {
@@ -25,11 +23,21 @@ async function startApp() {
 }
 
 startApp();
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
-app.use(cors())
+const corsOptions = {
+  origin: 'https://plaintiffaid.vercel.app/#/', // Replace with your allowed origin
+  methods: ['GET', 'POST'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  exposedHeaders: ['Content-Length'], // Exposed headers
+  credentials: true, // Allow credentials (cookies)
+  preflightContinue: false, // Handle preflight separately
+};
+
+// Use CORS middleware with options
+app.use(cors(corsOptions));
+
 
 const port: number = 3000;
 

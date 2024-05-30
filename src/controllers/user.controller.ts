@@ -2,10 +2,12 @@ import express, { NextFunction, Request, Response } from "express";
 import { Case, Client, Prisma, PrismaClient, Schedule, User } from '@prisma/client';
 import nodemailer from "nodemailer"
 import dotenv from "dotenv";
-import { Strategy as GoogleStrategy, Profile } from "passport-google-oauth20";
 import passport from"passport"
-import { UploadedFile } from 'express-fileupload';
+import path from "path";
+import { Readable } from "stream";
+import fs from "fs"
 
+import multer from 'multer'
 
 import {v2 as cloudinary} from 'cloudinary';
 dotenv.config({path:".env"})
@@ -46,7 +48,9 @@ import {
   uploadDocument,
   getAllDocuments,
   createSettings,
-  updateSettings
+  updateSettings,
+  contactCompany,
+  getOneDocument
 } from "../db/users.db";
 import * as jwt from "jsonwebtoken";
 
@@ -57,7 +61,8 @@ import { generateDynamicEmail } from "../middleware/html";
 import { generateEmailTemplate } from "../Appointment";
 import { JWT_SECRET } from "../config/secrets";
 import { resetEmail } from "../middleware/resetEmail";
-import { log } from "console";
+import { error, log } from "console";
+import { fsync } from "fs";
 
 
 
@@ -357,77 +362,338 @@ export const signOut = async (req: Request, res: Response) => {
 
 
 
-//create a client manually
+// //create a client manually
+// export const createClientController = async (req: Request, res: Response) => {
+//   const { firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription } = req.body;
+
+//   try {
+//     // Check if request body is missing
+//     if (!req.body || Object.keys(req.body).length == 0) {
+//       return res.status(400).json({ error: "empty field" });
+//     }
+
+//     // Validate firstname
+//     if (!firstname || typeof firstname !== 'string') {
+//       return res.status(400).json({ error: "Firstname field is empty or contains invalid characters" });
+//     }
+
+//     // Validate lastname
+//     if (!lastname || typeof lastname !== 'string') {
+//       return res.status(400).json({ error: "Lastname field is empty or contains invalid characters" });
+//     }
+
+//     // Validate contactNumber
+//     if (!contactNumber || typeof contactNumber !== 'string' || !/^\d{11}$/.test(contactNumber)) {
+//       return res.status(400).json({ error: "Contact number is required and must be a 10-digit number" });
+//     }
+
+//     // Validate email
+//     if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
+//       return res.status(400).json({ error: "Email field is empty or contains invalid characters" });
+//     }
+
+//     // Validate address
+//     if (!address || typeof address !== 'string') {
+//       return res.status(400).json({ error: "Address field is empty or contains invalid characters" });
+//     }
+
+//     // Validate Gender
+//     if (!Gender || typeof Gender !== 'string') {
+//       return res.status(400).json({ error: "Gender is empty or contains invalid Characters" });
+//     }
+
+//     // Validate caseName
+//     if (!caseName || typeof caseName !== 'string') {
+//       return res.status(400).json({ error: "caseName is empty or contains invalid Characters" });
+//     }
+
+//     // Validate CaseDescription
+//     if (!CaseDescription || typeof CaseDescription !== 'string') {
+//       return res.status(400).json({ error: "Case description is empty or contains invalid Characters" });
+//     }
+
+//     // Continue with your existing code
+//     const userId = req.params.UserID; // Extract userId from URL params
+//     const files = req.files as unknown as { [fieldname: string]: UploadedFile[] }; // Type assertion
+
+//     if (!files || Object.keys(files).length === 0) {
+//       res.status(400).json("No files provided");
+//       return;
+//     }
+//     const authenticatedUser = await getUserById(userId);
+
+//     if (!authenticatedUser) {
+//       return res.status(403).json("Forbidden");
+//     }
+
+//     if (userId !== authenticatedUser.UserID) {
+//       return res.status(403).json("Forbidden");
+//     }
+//     const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription, userId);
+
+    
+//     res.status(201).json(newClient);
+//   } catch (error:any) {
+//     res.status(500).json({message:error.message})
+//   }
+// };
+// export const createClientController = async (req: Request, res: Response) => {
+//   const { firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription } = req.body;
+//   const userId = req.params.UserID; // Extract userId from URL params
+
+//   try {
+//     const authenticatedUser = await getUserById(userId);
+
+//     if (!authenticatedUser) {
+//       return res.status(403).json("Forbidden");
+//     }
+
+//     if (userId !== authenticatedUser.UserID) {
+//       return res.status(403).json("Forbidden");
+//     }
+
+//     // Check if request body is missing
+//     if (!req.body) {
+//       return res.status(400).json({ error: "Empty field" });
+//     }
+
+//     // Validate firstname
+//     if (!firstname) {
+//       return res.status(400).json({ error: "Firstname field is empty or contains invalid characters" });
+//     }
+
+//     // Validate lastname
+//     if (!lastname || typeof lastname !== 'string') {
+//       return res.status(400).json({ error: "Lastname field is empty or contains invalid characters" });
+//     }
+
+//     // Validate contactNumber
+//     if (!contactNumber || typeof contactNumber !== 'string' || !/^\d{11}$/.test(contactNumber)) {
+//       return res.status(400).json({ error: "Contact number is required and must be an 11-digit number" });
+//     }
+
+//     // Validate email
+//     if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
+//       return res.status(400).json({ error: "Email field is empty or contains invalid characters" });
+//     }
+
+//     const existingClient = await prisma.client.findUnique({
+//       where: { Email: email }
+//     });
+//     if (existingClient) {
+//       return res.status(401).json({ error: "Client with this email already exists" });
+//     }
+
+//     // Validate address
+//     if (!address || typeof address !== 'string') {
+//       return res.status(400).json({ error: "Address field is empty or contains invalid characters" });
+//     }
+
+//     // Validate Gender
+//     if (!Gender || typeof Gender !== 'string') {
+//       return res.status(400).json({ error: "Gender is empty or contains invalid characters" });
+//     }
+
+//     // Validate caseName
+//     if (!caseName || typeof caseName !== 'string') {
+//       return res.status(400).json({ error: "caseName is empty or contains invalid characters" });
+//     }
+
+//     // Validate CaseDescription
+//     if (!CaseDescription || typeof CaseDescription !== 'string') {
+//       return res.status(400).json({ error: "Case description is empty or contains invalid characters" });
+//     }
+
+//     // Create the client and associate it with the user and case
+//     const newClient = await prisma.client.create({
+//       data: {
+//         FirstName: firstname,
+//         LastName: lastname,
+//         ContactNumber: contactNumber,
+//         Email: email,
+//         Address: address,
+//         Gender: Gender,
+//         Case: {
+//           create: {
+//             CaseName: caseName,
+//             CaseDescription: CaseDescription,
+//             AssignedUser: {
+//               connect: { UserID: userId }
+//             }
+//           }
+//         },
+//         User: {
+//           connect: { UserID: userId }
+//         }
+//       }
+//     });
+
+//     console.log(newClient);
+
+//     const uploadedDocuments: any[] = [];
+
+//     // Handle file uploads and save document information if files are provided
+//     if (req.files && Object.keys(req.files).length > 0) {
+//       // Type assertion for files
+//       const files = req.files as unknown as { [fieldname: string]: UploadedFile[] };
+
+//       // Iterate over each field name in req.files
+//       for (const fieldName in files) {
+//         if (Object.prototype.hasOwnProperty.call(files, fieldName)) {
+//           const file = files[fieldName]; // Get the file(s) for this field name
+
+//           // If there's only one file, convert it to an array to unify handling
+//           const fileList = Array.isArray(file) ? file : [file];
+
+//           // Process each file in the fileList
+//           for (const singleFile of fileList) {
+//             const result = await cloudinary.uploader.upload(singleFile.tempFilePath, {
+//               public_id: `${Date.now()}`,
+//               resource_type: "auto"
+//             });
+
+//             const document = {
+//               name: singleFile.name,
+//               path: result.secure_url
+//             };
+
+//             const uploadedDocument = await uploadDocument(newClient.ClientID, document, userId);
+//             uploadedDocuments.push(uploadedDocument);
+//           }
+//         }
+//       }
+//     }
+
+//     // Send response
+//     res.status(201).json({
+//       message: "Client created successfully",
+//       newClient: newClient,
+//       uploadedDocuments: uploadedDocuments
+//     });
+//   } catch (error: any) {
+//     res.status(500).json({ message: "forbidden" });
+//     console.log(error);
+//   }
+// };
+
+
 export const createClientController = async (req: Request, res: Response) => {
-  const { firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription } = req.body;
+  // Extract userId from URL params
+  const userId = req.params.UserID;
 
   try {
-    // Check if request body is missing
-    if (!req.body) {
-      return res.status(400).json({ error: "Request body is missing" });
-    }
-
-    // Validate firstname
-    if (!firstname || typeof firstname !== 'string') {
-      return res.status(400).json({ error: "Firstname field is empty or contains invalid characters" });
-    }
-
-    // Validate lastname
-    if (!lastname || typeof lastname !== 'string') {
-      return res.status(400).json({ error: "Lastname field is empty or contains invalid characters" });
-    }
-
-    // Validate contactNumber
-    if (!contactNumber || typeof contactNumber !== 'string' || !/^\d{11}$/.test(contactNumber)) {
-      return res.status(400).json({ error: "Contact number is required and must be a 10-digit number" });
-    }
-
-    // Validate email
-    if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
-      return res.status(400).json({ error: "Email field is empty or contains invalid characters" });
-    }
-
-    // Validate address
-    if (!address || typeof address !== 'string') {
-      return res.status(400).json({ error: "Address field is empty or contains invalid characters" });
-    }
-
-    // Validate Gender
-    if (!Gender || typeof Gender !== 'string') {
-      return res.status(400).json({ error: "Gender is empty or contains invalid Characters" });
-    }
-
-    // Validate caseName
-    if (!caseName || typeof caseName !== 'string') {
-      return res.status(400).json({ error: "caseName is empty or contains invalid Characters" });
-    }
-
-    // Validate CaseDescription
-    if (!CaseDescription || typeof CaseDescription !== 'string') {
-      return res.status(400).json({ error: "Case description is empty or contains invalid Characters" });
-    }
-
-    // Continue with your existing code
-    const userId = req.params.UserID; // Extract userId from URL params
+    // Check if user is authenticated
     const authenticatedUser = await getUserById(userId);
-
     if (!authenticatedUser) {
       return res.status(403).json("Forbidden");
     }
 
-    if (userId !== authenticatedUser.UserID) {
-      return res.status(403).json("Forbidden");
+    // Process text fields
+    const { firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription } = req.body;
+
+    // Validate text fields...
+  // Check if request body is missing
+  if (!req.body) {
+     res.status(400).json({ error: "Request body is missing" });
+     return;
+  }
+
+  // Validate firstname
+  if (!firstname || typeof firstname !== 'string') {
+    res.status(400).json({ error: "Firstname field is empty or contains invalid characters" });
+    return;
+  }
+
+  // Validate lastname
+  if (!lastname || typeof lastname !== 'string') {
+     res.status(400).json({ error: "Lastname field is empty or contains invalid characters" });
+     return;
+  }
+
+  // Validate contactNumber
+  if (!contactNumber || typeof contactNumber !== 'string' || !/^\d{11}$/.test(contactNumber)) {
+     res.status(400).json({ error: "Contact number is required and must be a 10-digit number" });
+    return;
+  }
+
+  // Validate email
+  if (!email || typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
+   res.status(400).json({ error: "Email field is empty or contains invalid characters" });
+   return;
+  }
+
+  // Validate address
+  if (!address || typeof address !== 'string') {
+    return res.status(400).json({ error: "Address field is empty or contains invalid characters" });
+  }
+  const errors: string[] = [];  // Validate Gender
+  const validGenders = ['Male', 'Female'];
+  if (!Gender || !validGenders.includes(Gender)) {
+   res.status(400).json({error:'Invalid or missing Gender'});
+   return;
+  }
+  
+
+  // Validate caseName
+  if (!caseName || typeof caseName !== 'string') {
+    return res.status(400).json({ error: "caseName is empty or contains invalid Characters" });
+  }
+
+  // Validate CaseDescription
+  if (!CaseDescription || typeof CaseDescription !== 'string') {
+    return res.status(400).json({ error: "Case description is empty or contains invalid Characters" });
+  }
+    // Create the client and associate it with the user and case
+    const newClient = await prisma.client.create({
+      data: {
+        FirstName: firstname,
+        LastName: lastname,
+        ContactNumber: contactNumber,
+        Email: email,
+        Address: address,
+        Gender: Gender,
+        Case: {
+          create: {
+            CaseName: caseName,
+            CaseDescription: CaseDescription,
+            AssignedUser: {
+              connect: { UserID: userId }
+            }
+          }
+        },
+        User: {
+          connect: { UserID: userId }
+        }
+      }
+    });
+
+    // Handle file uploads and save document information if files are provided
+    const uploadedDocuments: any[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files as Express.Multer.File[]) {
+        console.log(`Processing file: ${file.filename}`);
+        // Here you can save document information without using Cloudinary
+        const document = {
+          name: file.originalname,
+          // Assuming you have a file storage system, save the path accordingly
+          path: `../uploads/${file.originalname}` // Example path
+        };
+        // Save document information to your database
+        const uploadedDocument = await uploadDocument(newClient.ClientID, document, userId);
+        uploadedDocuments.push(uploadedDocument);
+      }
     }
-
-    const newClient = await createClientManually(userId, firstname, lastname, contactNumber, email, address, Gender, caseName, CaseDescription, userId);
-
-    res.status(201).json(newClient);
-  } catch (error:any) {
-    res.status(500).json({message:error.message})
+    // Send response
+    res.status(201).json({
+      message: "Client created successfully",
+      newClient: newClient,
+      uploadedDocuments: uploadedDocuments
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: "Internal Server Error" });
+    console.log(error.message);
   }
 };
-
-
 
 
 export const downloadTemplateController = async (req: Request, res: Response): Promise<void> => {
@@ -464,9 +730,10 @@ export const downloadTemplateController = async (req: Request, res: Response): P
   }
 };
 
+
 export const ClientBatchUpload = async (req: Request, res: Response) => {
-  const userId =req.params.UserID;
-  const assignedUserId = req.params.AssignedUserID; // Parse assignedUserId as well
+  const userId =req.params.UserID
+  const assignedUserId =req.params.AssignedUserID // Parse assignedUserId as well
 
   try {
     // Check if user is authenticated
@@ -564,7 +831,6 @@ export const ClientBatchUpload = async (req: Request, res: Response) => {
 
 
 
-
 export const Allclients = async (req: Request, res: Response) => {
   //perform the try catch 
   try {
@@ -593,21 +859,23 @@ export const Allclients = async (req: Request, res: Response) => {
   }
 }
 
-export const clientByFirstname = async (req: Request, res: Response) => {
+export const clientById = async (req: Request, res: Response) => {
   try {
-    const userId = req.params.UserID;
+    const userId = req.params.userID;
+    const clientId = req.params.clientID;
     const user = await getUserById(userId);
     if (!user) {
       return res.status(403).json("Forbidden"); // Send response and exit the function
     }
-    const { firstname } = req.body;
-    const findClient = await getClientByFirstname(firstname, userId);
+
+    const findClient = await getAClient(userId, clientId);
     if (findClient === undefined || findClient === null) {
       return res.status(401).json({
         status: false,
-        message: "Client could not be found by first name"
+        message: "Client could not be found"
       });
     }
+    
     //If client is found, send response with client data
     res.status(200).json({
       status: true,
@@ -714,6 +982,7 @@ export const updateClient = async (req: Request, res: Response) => {
       },
       include: {
         Case: true,
+        Documents:true
       },
     });
 
@@ -1037,6 +1306,10 @@ export const restoreClient = async (req: Request, res: Response) => {
       data: {
         isDeleted: false, // Mark as not deleted
       },
+      include:{
+        Case:true,
+        Documents:true
+      }
     });
 
     // Send success message and restored client as JSON response
@@ -1086,58 +1359,53 @@ if(!user){
 
 //add a document 
 
-
-
-
-export const addClientDocument = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { clientId, userId } = req.params;
-    const files = req.files as unknown as { [fieldname: string]: UploadedFile[] }; // Type assertion
-
-    if (!files || Object.keys(files).length === 0) {
-      res.status(400).json("No files provided");
-      return;
-    }
-
-    const getUser = await getUserById(userId);
-    if (!getUser) {
-      res.status(401).json("User not found");
-      return;
-    }
-
-    const uploadedDocuments: any[] = [];
-
-    // Iterate over each field name in req.files
-    for (const fieldName in files) {
-      if (Object.prototype.hasOwnProperty.call(files, fieldName)) {
-        const file = files[fieldName]; // Get the file(s) for this field name
-
-        // If there's only one file, convert it to an array to unify handling
-        const fileList = Array.isArray(file) ? file : [file];
-
-        // Process each file in the fileList
-        for (const singleFile of fileList) {
-          const result = await cloudinary.uploader.upload(singleFile.tempFilePath, {
-            public_id: `${Date.now()}`,
-            resource_type: "auto"
-          });
-
-          const document = {
-            name: singleFile.name,
-            path: result.secure_url
-          };
-
-          const uploadedDocument = await uploadDocument(clientId, document, userId);
-          uploadedDocuments.push(uploadedDocument);
-        }
-      }
-    }
-
-    res.status(200).json({ message: 'Documents uploaded successfully', documents: uploadedDocuments });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+export const clientuploadDocument = async (req: Request, res: Response) => {
+  const { userId, clientId } = req.params;
+  const user = await getUserById(userId)
+  if(!user){
+    res.status(404).json("failed to fetch user by Id")
   }
+
+  const client = await prisma.client.findFirst({
+    where: {
+      ClientID: clientId,
+      userId: userId,
+    },
+  });
+
+  if (!client) {
+    return res.status(404).json({ error: 'Client not found' });
+  }
+  // Handle file uploads and save document information if files are provided
+  try{
+  const uploadedDocuments: any[] = [];
+  if (req.files && Array.isArray(req.files)) {
+    for (const file of req.files as Express.Multer.File[]) {
+      console.log(`Processing file: ${file.filename}`);
+      // Here you can save document information without using Cloudinary
+      const document = {
+        name: file.originalname,
+        // Assuming you have a file storage system, save the path accordingly
+        path: `../uploads/${file.originalname}` // Example path
+      };
+      // Save document information to your database
+      const uploadedDocument = await uploadDocument(client.ClientID, document, userId);
+      uploadedDocuments.push(uploadedDocument);
+    }
+  }
+  console.log(uploadedDocuments);
+  
+    res.status(201).json({
+      message:"Docment Successfully Uploaded",
+      data: uploadedDocuments
+    });
+  } catch (error) {
+    console.error('Error uploading documents:', error);
+    res.status(500).json({ error: 'Error uploading documents' });
+  };
 }
+
+
 
 export const getClientDocuments = async(req: Request, res: Response): Promise<void> => {
   try {
@@ -1161,19 +1429,23 @@ export const getClientDocuments = async(req: Request, res: Response): Promise<vo
     res.status(500).json({ error: error.message });
   }
 }
-export const getClientDocument = async(req: Request, res: Response): Promise<void> => {
+export const getClientDocumentByName = async(req: Request, res: Response): Promise<void> => {
   try {
     const { userId, clientId } = req.params;
-
+    const { documentName } = req.body;
+  
     // Check if user exists
     const getUser = await getUserById(userId);
     if (!getUser) {
       res.status(401).json("User not found");
       return;
     }
-
+    // Validate documentName
+    if (!documentName || Object.keys(documentName).length == 0) {
+      res.status(400).json({ error: 'Document name is required' });  return;
+     }
     // Get all documents for the client
-    const documents = await getAllDocuments(clientId, userId);
+    const documents = await getOneDocument(clientId, userId, documentName);
 
     // Send the documents as a response
     res.status(200).json(documents);
@@ -1184,13 +1456,23 @@ export const getClientDocument = async(req: Request, res: Response): Promise<voi
   }
 };
 
+
+// export const DeleteDocuments =
 export const createUserSettings = async (req: Request, res: Response) => {
   const userId = req.params.userId; // Extract userId from request params
   const settingsData = req.body; // Extract settings data from request body
-
   try {
+const getUserByEmail= await prisma.user.findUnique({where:{Email:settingsData.Email}})
+
+if(getUserByEmail){
+  res.status(401).json("Please enter a Unique Email")
+  return;
+}
+  
     const result = await createSettings(userId, settingsData); // Call updateSettings function
-    res.status(200).json(result); // Send success response with updated user settings
+    res.status(200).json({
+      message:"User Settings Saved!",
+      result}); // Send success response with updated user settings
   } catch (error) {
     console.error('Error creating user settings:', error);
     res.status(500).json({ error: 'Error creating user settings' }); // Send error response
@@ -1202,17 +1484,25 @@ export const handleupdateUserSettings = async(req:Request, res:Response)=>{
   const settingsData = req.body;
 
   try {
-
+    
     const getUser = await getUserById(userId)
     if(!getUser){
       res.status(401).json("user not Found")
       return;
     }
+    const getUserByEmail= await prisma.user.findUnique({where:{Email:settingsData.Email}})
+
+    if(getUserByEmail){
+      res.status(401).json("Please enter a Unique Email")
+      return;
+    }
 
     const result = await updateSettings(userId, settingsData)
 
+
+
     res.status(200).json({
-  message:"success",
+  message:"User Settings successfully Updated!",
   data:result
 })
   } catch (error) {
@@ -1221,3 +1511,29 @@ export const handleupdateUserSettings = async(req:Request, res:Response)=>{
     
   }
 }
+
+// export const sendMessagetoPlaintiffAid = async(req:Request, res:Response)=>{
+//   const {name, email, companyName, message} = req.body
+//   const FirmName = "PlaintiffAid"
+
+//   if(!req.body || Object.keys(length == 0)){
+//     res.status(400).json("One or More Fields Empty")
+//     return;
+//   }
+
+//   const sendContactMessage = await contactCompany(name, email, companyName, message)
+
+//   const subject = 'Email Verification'
+//     //jwt.verify(token, process.env.secret)
+    
+//     const html = generateDynamicEmail(link, FirmName)
+//     sendEmail({
+//       email: user.Email,
+//       html,
+//       subject
+//     })
+
+
+
+
+// }

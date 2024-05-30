@@ -212,23 +212,27 @@ export const getAllClients = (userId: string) =>
     where: {
       userId: userId,
       isDeleted: false,
-    },
+    },include:{
+      Documents:true
+    }
   });
 
 export const getAClient = async (
   userId: string,
   clientId: string,
-  caseId: string
 ) => {
   try {
     const client = await prisma.client.findFirst({
       where: {
         userId: userId,
         ClientID: clientId,
-        CaseID: caseId,
-      },
+        isDeleted:false
+      },include:{
+        Case:true,
+        Documents:true
+      }
     });
-    return client !== null; // Return true if client exists, false otherwise
+   return client // Return true if client exists, false otherwise
   } catch (error) {
     console.error("Error fetching client:", error);
     throw new Error("Failed to fetch client.");
@@ -356,6 +360,7 @@ export const updateClientManually = async (
       },
       include: {
         Case: true,
+        Documents:true
       },
     });
     return updatedClient;
@@ -467,7 +472,9 @@ export const createSettings = async (
       throw new Error("User or settings not found");
     }
 
+    
     const settings: Settings = user.settings as unknown as Settings;
+    
      // Fetch the updated user
      const updatedUser = await prisma.user.update({
       where: { UserID: userId },
@@ -589,7 +596,7 @@ export const getAllDocuments = async(clientId:string,userId:string)=>{
 
 }
 
-export const getOneDocument = async(clientId:string,userId:string)=>{
+export const getOneDocument = async(clientId:string,userId:string, documentName:string)=>{
   try {
    const client = await prisma.client.findUnique({where:{ClientID:clientId}})
    if(!client || Object.keys(client).length===0){
@@ -598,12 +605,19 @@ export const getOneDocument = async(clientId:string,userId:string)=>{
    if(client.userId !== userId){
     throw new Error ("UnAuthorized User")
    }
-   const Documents = await prisma.document.findFirst({
-    where:{
-      ClientID:clientId,
+   const documents = await prisma.$runCommandRaw({
+    find: "document",
+    filter: {
+      ClientID: clientId,
+      DocumentName: { $regex: documentName, $options: "i" } // Case-insensitive regex
     }
-   })
-   return Documents;
+  });
+
+  // If no documents are found, throw an error
+  if (!documents || documents.length === 0) {
+    throw new Error("No documents found");
+  }
+   return documents;
   } catch (error) {
     console.error(`error getting Document`)
     throw error
@@ -646,3 +660,21 @@ export const getDocumentbyName = async (clientId: string, userId: string, docume
 }
 
 
+export const contactCompany = async(name:string, email:string, companyName:string, message:string )=>{
+  try {
+    const sendContact = await prisma.contact.create({
+      data:{
+        name: name,
+        email:email,
+        companyName:companyName,
+        message:message
+      }
+    })
+    return sendContact;
+  } catch (error) {
+    console.error('error contacting PlaintiffAid');
+    
+    throw error
+  }
+  
+}
