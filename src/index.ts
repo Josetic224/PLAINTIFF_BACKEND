@@ -26,17 +26,14 @@ startApp();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
-const corsOptions = {
-  origin: 'https://plaintiffaid.vercel.app', // Replace with your allowed origin
-  methods: ['GET', 'POST','PUT','DELETE',], // Allowed HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-  exposedHeaders: ['Content-Length'], // Exposed headers
-  credentials: true, // Allow credentials (cookies)
-  preflightContinue: false, // Handle preflight separately
-};
 
-// Use CORS middleware with options
-app.use(cors(corsOptions));
+const allowedOrigin = 'https://plaintiffaid.vercel.app';
+app.use(cors({
+  origin: allowedOrigin,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+}));
+
 
 
 const port: number = 3000;
