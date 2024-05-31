@@ -6,23 +6,12 @@ import cors, {CorsOptions} from "cors"
 import bodyParser from "body-parser";
 import { connectToDatabase, prisma } from "./db/users.db";
 const app: Application = express();
-const allowedOrigins = ['http://localhost:3000', 'https://plaintiffaid.vercel.app'];
 
-const corsOptions: CorsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+app.use(cors({
+  origin: '*', // Allow all origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
-};
-
-// Middleware
-app.use(cors(corsOptions));
+}));
 app.use(bodyParser.json()); 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
