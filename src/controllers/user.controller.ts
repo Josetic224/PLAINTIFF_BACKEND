@@ -254,6 +254,7 @@ export const signIn = async (req: Request, res: Response) => {
     console.log(sendOTPEmail)
 
     res.status(200).json({
+      email:email,
       message: 'OTP sent to your email. Please verify to continue.',
     });
   } catch (err: any) {
