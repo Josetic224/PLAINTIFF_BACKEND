@@ -7,6 +7,7 @@ import path from "path";
 import { Readable } from "stream";
 import fs from "fs"
 import crypto from "crypto"
+import bcrypt from "bcrypt"
 
 import multer from 'multer'
 
@@ -266,6 +267,8 @@ export const signIn = async (req: Request, res: Response) => {
 };
 
 
+
+
 export const verifyOTP = async (req: Request, res: Response) => {
   const { email, otp } = req.body;
 
@@ -279,14 +282,18 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const currentTime = new Date();
     console.log(`User: ${existingUser.Email}, Stored OTP: ${existingUser.OTP}, Provided OTP: ${otp}, OTP Expires At: ${existingUser.OTPExpiresAt}, Current Time: ${currentTime}`);
 
+    // Verify the OTP
+    const isOTPValid = existingUser.OTP && bcrypt.compareSync(otp, existingUser.OTP);
+    
     // Check if OTP is correct and not expired
-    if (!existingUser.OTP || !existingUser.OTPExpiresAt || existingUser.OTP !== otp || existingUser.OTPExpiresAt < currentTime) {
+    if (!isOTPValid || !existingUser.OTPExpiresAt || existingUser.OTPExpiresAt < currentTime) {
       // Generate a new OTP
       const newOtp = crypto.randomInt(100000, 999999).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
 
       // Update user with new OTP and expiry time
-      await updateUserOTP(existingUser.UserID, newOtp, otpExpiresAt);
+      const hashedOtp = bcrypt.hashSync(newOtp, 10);
+      await updateUserOTP(existingUser.UserID, hashedOtp, otpExpiresAt);
       console.log(`Generated new OTP: ${newOtp} for user: ${email}`);
       await sendOTPEmail(existingUser.Email, newOtp);
 
@@ -318,6 +325,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     return res.status(500).json({ status: false, message: err.message });
   }
 };
+
 
 
 //write the function for forgot Password
