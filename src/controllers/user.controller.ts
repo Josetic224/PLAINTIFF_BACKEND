@@ -80,45 +80,39 @@ export const getAllUsersController = async (req: Request, res: Response) => {
     return res.sendStatus(400).json({ status: "false", message: err.message });
   }
 };
-
-
 export const signUp = async (req: Request, res: Response) => {
   const { email, password, confirmPassword, PhoneNumber, FirmName } = req.body;
-console.log(req.body)
+  console.log(req.body);
+
   try {
     if (!email || !password || !FirmName || !PhoneNumber) {
-      res.status(400).json("one or more input fields are empty")
+      return res.status(400).json("one or more input fields are empty");
     }
+    
     let user = await getUserByEmail(email);
-
     if (user) {
-      throw new Error("Email already exists");
+      return res.status(400).json({ status: false, message: "Email already exists" });
     }
-  
+
     if (password !== confirmPassword) {
-      return res.status(401).json("both passwords do not match")
+      return res.status(401).json({ status: false, message: "both passwords do not match" });
     }
- 
-    //sign the user
+
     // Create the user
     user = await createUser(FirmName, password, email, PhoneNumber);
 
-
-
-    const subject = 'Email Verification'
-    //jwt.verify(token, process.env.secret)
-    const link = `https://plaintiffaid.vercel.app/#/verification/${user.Token}`
-    
-    const html = generateDynamicEmail(link, FirmName)
+    const subject = 'Email Verification';
+    const link = `https://plaintiffaid.vercel.app/#/verification/${user.Token}`;
+    const html = generateDynamicEmail(link, FirmName);
     sendEmail({
       email: user.Email,
       html,
       subject
-    })
+    });
 
     // Send a response indicating success
     return res.status(200).json({
-      message:"Signup Successful please click the link sent to your Email to verify your account!",
+      message: "Signup Successful please click the link sent to your Email to verify your account!",
       user
     });
   } catch (err: any) {
@@ -128,6 +122,7 @@ console.log(req.body)
     return res.status(500).json({ status: false, message: err.message });
   }
 };
+
 
 //verify email function
 
