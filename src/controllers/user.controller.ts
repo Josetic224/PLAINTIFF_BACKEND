@@ -322,7 +322,6 @@ export const verifyOTP = async (req: Request, res: Response) => {
 };
 
 
-
 //write the function for forgot Password
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
